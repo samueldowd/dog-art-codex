@@ -14,7 +14,7 @@ PROJECT_NAME = "dog-art-pipeline"
 DEV_REPO_DIR = "C:/Users/Sam/Documents/dog-art-codex-build-v1.1.0/dog-art-codex-build"
 # UNKNOWN: Verified target remote URL without embedded credentials; never the FPA reference repo.
 # TYPE: string
-GIT_REMOTE_URL = ""
+GIT_REMOTE_URL = "https://github.com/samueldowd/dog-art-codex"
 # DEFAULT: Git GUI initialized this local repository on master; verified from .git/HEAD.
 # TYPE: string
 GIT_BASE_BRANCH = "master"
@@ -26,7 +26,7 @@ GIT_AUTHOR_NAME = "Sam Dowd"
 GIT_AUTHOR_EMAIL = "sam@samueldowd.com"
 # DEFAULT: local_only or explicitly configured push_branch; merging/releases are separate.
 # TYPE: string
-GIT_REMOTE_POLICY = "local_only"
+GIT_REMOTE_POLICY = "push_branch"
 # UNKNOWN: Direct SSH connection/alias on the executing host.
 # TYPE: string
 CT112_SSH_ALIAS = ""
