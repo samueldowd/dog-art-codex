@@ -23,6 +23,7 @@ def create_release(wheel, output, revision):
         "CODEX_BUILD_BRIEF.md": ROOT / "CODEX_BUILD_BRIEF.md",
         "ASSET_MANIFEST.json": ROOT / "ASSET_MANIFEST.json",
         "config/app.toml.example": ROOT / "config/app.toml",
+        "config/app.toml": ROOT / "config/app.toml",
         "config/.env.example": ROOT / "config/.env.example",
     }
     for folder in ("deploy/systemd", "docs"):
