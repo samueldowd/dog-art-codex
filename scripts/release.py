@@ -48,6 +48,20 @@ def create_release(wheel, output, revision):
         if line.strip() and not line.startswith("#") and line.split("=", 1)[1].strip():
             raise ValueError("populated secrets template")
     members = {name: path.read_bytes() for name, path in selected.items()}
+    # Historical specification links reference build-host files deliberately
+    # excluded from runtime delivery. Keep those references pinned to source.
+    config_doc = members["docs/03-CONFIGURATION.md"].decode()
+    config_doc = config_doc.replace("(../config/app.toml)", "(../config/app.toml.example)")
+    for source_only in ("config/build.toml", ".gitignore"):
+        config_doc = config_doc.replace(
+            "(../" + source_only + ")",
+            "(https://github.com/samueldowd/dog-art-codex/blob/"
+            + revision
+            + "/"
+            + source_only
+            + ")",
+        )
+    members["docs/03-CONFIGURATION.md"] = config_doc.encode()
     members["SOURCE_REVISION"] = (revision + "\n").encode()
     manifest = {name: hashlib.sha256(data).hexdigest() for name, data in members.items()}
     members["SHA256SUMS"] = "".join(
