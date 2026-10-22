@@ -4,3 +4,18 @@
 *.env
 !.env.example
 
+
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.work/
+private-fixtures/
+*.sqlite*
+*.db*
+models/

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dog-art-pipeline"
+version = "0.1.0"
+description = "Local Frigate dog identity, watercolor portraits and daily collages"
+requires-python = ">=3.11"
+dependencies = ["Pillow", "httpx", "openai", "smbprotocol", "python-dotenv", "numpy==2.2.6", "onnxruntime==1.23.2", "paho-mqtt"]
+
+[project.scripts]
+dog-art = "dog_art.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+dog_art = ["resources/*.png", "resources/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: explicitly enabled live acceptance", "local_model: explicitly enabled local model requests"]
+
+[tool.ruff]
+line-length = 100

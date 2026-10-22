@@ -13,10 +13,10 @@ APP_DATA_ROOT = "/var/lib/dog-art"
 # Frigate and MQTT
 # UNKNOWN: Actual authorized Frigate URL and port; verify configured auth/API routes/version.
 # TYPE: string
-FRIGATE_BASE_URL = ""
+FRIGATE_BASE_URL = "http://192.168.7.73:5000"
 # UNKNOWN: Explicit verified auth mode; blank is not anonymous.
 # TYPE: string
-FRIGATE_AUTH_MODE = ""
+FRIGATE_AUTH_MODE = "none"
 # UNKNOWN: Optional trusted custom CA path; blank means normal system trust, not verify=false.
 # TYPE: string
 FRIGATE_CA_BUNDLE = ""
@@ -25,19 +25,19 @@ FRIGATE_CA_BUNDLE = ""
 FRIGATE_CAMERA_DISPLAY_NAMES = ["Backyard East","Driveway PTZ"]
 # UNKNOWN: Required verified list of exactly the two selected machine camera IDs.
 # TYPE: array[string]
-FRIGATE_CAMERA_IDS = []
+FRIGATE_CAMERA_IDS = ["backyard_east", "driveway_ptz"]
 # DEFAULT: Prefer verified MQTT; permit authenticated API polling if equivalent and documented.
 # TYPE: string
 FRIGATE_EVENT_SOURCE = "auto"
 # UNKNOWN: Broker address, required for MQTT mode.
 # TYPE: string
-MQTT_HOST = ""
+MQTT_HOST = "192.168.7.215"
 # UNKNOWN: Actual port; do not assume plaintext or TLS.
 # TYPE: integer
-MQTT_PORT = ""
+MQTT_PORT = 1883
 # UNKNOWN: Required explicit true/false when MQTT mode is selected.
 # TYPE: boolean
-MQTT_TLS = ""
+MQTT_TLS = false
 # DEFAULT: Verify against the actual installation.
 # TYPE: string
 MQTT_TOPIC_PREFIX = "frigate"
@@ -75,16 +75,16 @@ MIN_DOG_CROP_EDGE_PX = ""
 OLLAMA_HOST = "192.168.7.134"
 # UNKNOWN: Scheme/port unverified. A common candidate is http://192.168.7.134:11434; verify before filling.
 # TYPE: string
-OLLAMA_BASE_URL = ""
+OLLAMA_BASE_URL = "http://192.168.7.134:11434"
 # UNKNOWN: Exact requested Gemma model tag placeholder, intentionally blank.
 # TYPE: string
-OLLAMA_MODEL = ""
+OLLAMA_MODEL = "llama3.2-vision"
 # UNKNOWN: Reuse a suitable local image encoder if present; otherwise choose within resource/download/license bounds.
 # TYPE: string
 LOCAL_IMAGE_ENCODER = ""
 # DEFAULT: Safe initial device choice; use verified available acceleration through a documented decision.
 # TYPE: string
-LOCAL_ENCODER_DEVICE = "cpu"
+LOCAL_ENCODER_DEVICE = "cuda:0"
 
 # Identity
 # DEFAULT: No uncalibrated automatic merges. Switch to calibrated_auto only after acceptance evidence.
@@ -106,7 +106,7 @@ IDENTITY_CALIBRATION_PATH = ""
 # OpenAI
 # UNKNOWN: Verify a currently available image model with transparent PNG support and pricing.
 # TYPE: string
-OPENAI_IMAGE_MODEL = ""
+OPENAI_IMAGE_MODEL = "gpt-image-2.5-sunburst"
 # DEFAULT: Proposed portrait canvas; verify compatibility with the configured model.
 # TYPE: string
 OPENAI_IMAGE_SIZE = "1536x1024"
@@ -133,10 +133,10 @@ ALLOW_CAMERA_CROP_UPLOAD = false
 OPENAI_GENERATION_ENABLED = false
 # UNKNOWN: Explicit numeric ongoing image-generation cap; blank blocks live generation.
 # TYPE: number
-OPENAI_DAILY_BUDGET_USD = ""
+OPENAI_DAILY_BUDGET_USD = 5
 # UNKNOWN: Explicit numeric hard call count; blank blocks live generation.
 # TYPE: integer
-OPENAI_MAX_CALLS_PER_DAY = ""
+OPENAI_MAX_CALLS_PER_DAY = 12
 # DEFAULT: No blind replay after an uncertain paid request outcome.
 # TYPE: integer
 OPENAI_MAX_AUTOMATIC_ATTEMPTS_PER_PORTRAIT = 1
@@ -202,7 +202,7 @@ SMB_PORT = 445
 SMB_SHARE = "media"
 # KNOWN: Requested subdirectory, after share mapping is verified.
 # TYPE: string
-SMB_SUBDIRECTORY = "kitchen-tv"
+SMB_SUBDIRECTORY = "kitchen-tv/dog-art"
 # UNKNOWN: Optional domain; blank is allowed if the server does not require it.
 # TYPE: string
 SMB_DOMAIN = ""
@@ -216,10 +216,10 @@ PUBLISH_FILENAME = "dog-collage.png"
 ARCHIVE_COLLAGES = true
 # UNKNOWN: Blank means no automatic archive deletion; user requested retention.
 # TYPE: integer
-ARCHIVE_RETENTION_DAYS = ""
+ARCHIVE_RETENTION_DAYS = 180
 # UNKNOWN: Raw clip retention policy needs an explicit configured decision; never quietly delete user input.
 # TYPE: integer
-CLIP_RETENTION_DAYS = ""
+CLIP_RETENTION_DAYS = 180
 # DEFAULT: Pause new expensive/download work before exhaustion; preserve last good output.
 # TYPE: integer
 MIN_FREE_DISK_MB = 2048

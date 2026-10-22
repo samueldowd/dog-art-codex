@@ -11,7 +11,7 @@
 PROJECT_NAME = "dog-art-pipeline"
 # KNOWN: User-selected local checkout, prepared on 2026-10-22.
 # TYPE: string
-DEV_REPO_DIR = "C:/Users/Sam/Documents/dog-art-codex-build-v1.1.0/dog-art-codex-build"
+DEV_REPO_DIR = "/Users/sam/Documents/GitHub/dog-art-codex"
 # UNKNOWN: Verified target remote URL without embedded credentials; never the FPA reference repo.
 # TYPE: string
 GIT_REMOTE_URL = "https://github.com/samueldowd/dog-art-codex"
@@ -38,16 +38,16 @@ CT112_HOST = "192.168.7.117"
 CT112_SSH_USER = "chatgpt"
 # UNKNOWN: Path to an existing permitted key; never its content.
 # TYPE: string
-SSH_IDENTITY_FILE = ""
+SSH_IDENTITY_FILE = "~/.ssh/chatgpt_proxmox"
 # UNKNOWN: Trusted fingerprint/host-key verification record.
 # TYPE: string
 SSH_VERIFIED_HOST_KEY = ""
 # KNOWN: User-specified fallback connection name; actual access still needs verification.
 # TYPE: string
 PROXMOX_SSH_ALIAS = "proxmox-host"
-# KNOWN: User-specified Proxmox container ID.
+# KNOWN: User clarified 2026-10-22: CT112 is the hostname; actual Proxmox ID is 110.
 # TYPE: integer
-DEPLOY_TARGET_CTID = 112
+DEPLOY_TARGET_CTID = 110
 
 # Runtime paths
 # DEFAULT: Proposed application release root; inspect existing ownership first.
@@ -71,7 +71,7 @@ MODEL_DOWNLOAD_MAX_MB = 500
 # OpenAI
 # UNKNOWN: Explicit numeric cap for paid build/evaluation calls; blank blocks paid calls.
 # TYPE: number
-OPENAI_BUILD_BUDGET_USD = "2"
+OPENAI_BUILD_BUDGET_USD = 2
 
 # Collage and reset
 # DEFAULT: Controlled owned-image blank/restore test plus timer/clock tests; natural observation may supplement.
@@ -93,4 +93,4 @@ HA_DASHBOARD_VIEW_PATH = "/test-card"
 HA_SLIDESHOW_CARD_LOCATION = "top"
 # UNKNOWN: Observed rescan/cache behavior; validate before claiming live updates.
 # TYPE: number
-HA_SLIDESHOW_REFRESH_SECONDS = "10"
+HA_SLIDESHOW_REFRESH_SECONDS = 10
