@@ -29,13 +29,13 @@ GIT_AUTHOR_EMAIL = "sam@samueldowd.com"
 GIT_REMOTE_POLICY = "push_branch"
 # UNKNOWN: Direct SSH connection/alias on the executing host.
 # TYPE: string
-CT112_SSH_ALIAS = ""
+CT112_SSH_ALIAS = "ct112"
 # UNKNOWN: Container address; not the Proxmox host.
 # TYPE: string
-CT112_HOST = ""
+CT112_HOST = "192.168.7.117"
 # UNKNOWN: Authorized login identity.
 # TYPE: string
-CT112_SSH_USER = ""
+CT112_SSH_USER = "chatgpt"
 # UNKNOWN: Path to an existing permitted key; never its content.
 # TYPE: string
 SSH_IDENTITY_FILE = ""
@@ -71,7 +71,7 @@ MODEL_DOWNLOAD_MAX_MB = 500
 # OpenAI
 # UNKNOWN: Explicit numeric cap for paid build/evaluation calls; blank blocks paid calls.
 # TYPE: number
-OPENAI_BUILD_BUDGET_USD = ""
+OPENAI_BUILD_BUDGET_USD = "2"
 
 # Collage and reset
 # DEFAULT: Controlled owned-image blank/restore test plus timer/clock tests; natural observation may supplement.
@@ -81,16 +81,16 @@ RESET_ACCEPTANCE_MODE = "controlled_on_target"
 # Publication and HA
 # KNOWN: Normalized requested HA path; mapping must be verified, not assumed.
 # TYPE: string
-HA_MEDIA_DIRECTORY = "/media/kitchen-tv"
+HA_MEDIA_DIRECTORY = "/media/kitchen-tv/dog-art"
 # UNKNOWN: Actual existing Kitchen TV dashboard URL for visual acceptance.
 # TYPE: string
-HA_DASHBOARD_URL = ""
+HA_DASHBOARD_URL = "/common-commands"
 # UNKNOWN: Stable view path if applicable.
 # TYPE: string
-HA_DASHBOARD_VIEW_PATH = ""
+HA_DASHBOARD_VIEW_PATH = "/test-card"
 # UNKNOWN: Existing card identification/location; discover read-only.
 # TYPE: string
-HA_SLIDESHOW_CARD_LOCATION = ""
+HA_SLIDESHOW_CARD_LOCATION = "top"
 # UNKNOWN: Observed rescan/cache behavior; validate before claiming live updates.
 # TYPE: number
-HA_SLIDESHOW_REFRESH_SECONDS = ""
+HA_SLIDESHOW_REFRESH_SECONDS = "10"
