@@ -1,0 +1,9 @@
+include README.md requirements.lock
+recursive-include src/dog_art/resources *.png *.txt
+prune .work
+prune .venv
+prune private-fixtures
+prune models
+prune config
+prune dist
+global-exclude .env .env.* *.env *.sqlite* *.db* *.mp4 *.webp *.pyc .DS_Store

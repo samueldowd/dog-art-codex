@@ -1,104 +1,39 @@
-# Dog Art Pipeline: autonomous Codex build package
+# Dog Art Pipeline
 
-**Document version:** 1.1.0  
-**Prepared:** 2026-10-22, America/New_York  
-**Current delivery:** documentation and reference assets only. No pipeline has been installed, connected, or deployed.
+Native Python 3.11+ application for Debian container **CT112 (Proxmox ID 110)**. It ingests completed dog tracks from Frigate `backyard_east` and `driveway_ptz`, selects timestamped real dog views locally, describes them with pinned Ollama `qwen3-vl:8b`, and maintains a permanent SQLite identity/reference/artwork catalog. Accepted portraits use the official OpenAI Python SDK and generated style art only. Pillow composes today's accepted appearance entries into an opaque cream 1920×1080 collage; a guarded SMB publisher owns only `media/kitchen-tv/dog-art/dog-collage.png`.
 
-This package is an execution specification for a future Codex build. It is designed to work from a fresh chat without requiring the earlier conversation.
+**Implementation and live acceptance are in progress.** The user deferred returning-dog matching: selected per_observation mode permits repeated dogs as separate appearance entries; event replay remains idempotent. See [scope changes](docs/SCOPE_CHANGES.md). Paid generation and production publication remain disabled in the selected app configuration. CT112 installation prerequisites and isolated dependencies have been verified; the production application/service has not yet been promoted. Keep the distinction between implemented modules and observed live acceptance in [validation](docs/IMPLEMENTATION_VALIDATION.md) and the [requirement/evidence matrix](docs/CHECKLIST.md).
 
-## Start here
+The authoritative build assignment is [CODEX_BUILD_BRIEF.md](CODEX_BUILD_BRIEF.md) and docs 01–12. The user's numeric-container clarification supersedes references to container ID112 in those original documents: hostname CT112 means **ID110**.
 
-1. Read [CODEX_BUILD_BRIEF.md](CODEX_BUILD_BRIEF.md), the authoritative scope and execution contract.
-2. Complete or discover non-secret startup/deployment values in [config/build.toml](config/build.toml), and runtime values in [config/app.toml](config/app.toml), using [configuration guidance](docs/03-CONFIGURATION.md). Copy [config/.env.example](config/.env.example) to `config/.env` only if it does not already exist, then supply secrets securely. The real `.env` is ignored by Git and excluded from the ZIP.
-3. Give Codex the entire extracted package, not just this README. Make the intended implementation repository and SSH/network tools available.
-4. Paste the launch prompt below only when you actually want implementation to begin.
+## Quick start from this repository
 
-The package is ready for requirements-driven implementation. Live work remains subject to verified access, configured credentials, spending limits, and the critical-decision policy.
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install --require-hashes -r requirements.lock
+.venv/bin/python -m pip install --no-deps .
+# Preserve an existing populated config/.env; never overwrite it with the template.
+.venv/bin/dog-art --config config/app.toml --secrets-file config/.env doctor --mode offline --redact
+```
 
-## Launch prompt
+A missing dependency blocks only that stage. The runtime never loads `config/build.toml`, searches parent directories for secrets, evaluates dotenv as shell, or sends real camera frames to OpenAI. The nine secret keys belong solely in the explicit ignored `.env`. Native services use `/etc/dog-art/app.toml` and `/etc/dog-art/.env`.
 
-~~~text
-Implement the Dog Art Pipeline described in CODEX_BUILD_BRIEF.md and its linked
-modules. This message authorizes the future build within that specification's
-scope and permission boundaries; it is not a request for another plan.
+## Behavior and safeguards
 
-Read the brief and mandatory modules before editing. Discover and validate
-build/app settings and the separate secrets file without exposing credentials.
-Keep build-only keys out of app startup and keep real .env files out of Git and
-release artifacts. Use SSH to CT112 when available;
-otherwise use the existing SSH connection to proxmox-host and pct exec 112 for
-container-local work after verifying the container is running and is the target.
+- Polling reconciles a durable start-time cursor with pagination, overlap and incomplete-track refresh; duplicate notifications/events/jobs are unique in SQLite. MQTT-shaped notifications are supported by an adapter; production currently uses API polling.
+- Native recording frames use verified same-sensor sources and timestamps; Driveway PTZ retains wide recording by user choice and uses clean PTZ snapshots for review. Small crops have no size cutoff. A local hashed YOLOX nano detector generates fresh boxes around each Frigate track anchor during PTZ movement. Missing/ambiguous geometry, other dogs, clipping and occlusion defer to review. No manual fixed video coordinates.
+- A hashed DINOv2 small ONNX encoder supplies real-image features on CPU. Descriptions, collars, handlers, backgrounds and generated artwork cannot alone establish identity. Calibration, alternative margins and explicit uncertainty guard automatic matching.
+- Identity assignment/merge/split/undo preserve original observations and historical collage bytes. Visibility review is auditable. Review corrections rebuild current-day membership.
+- Paid recipe uniqueness is canonical dog plus style version. Persisted reservations, call/dollar limits, a paid-process barrier, disabled SDK retries and indeterminate-outcome recovery prevent blind duplicate submissions. Returned PNGs need alpha checks plus visual anatomy/style/likeness approval.
+- Daily generations use America/New_York observation dates, not processing time. Startup/timer catch-up, a cross-process publication barrier and last-moment day/revision checks reject yesterday's jobs. Histories/portraits/catalogs survive reset.
+- SMB uploads use hidden non-image temporary names, encrypted/signed sessions, safe replacement, decoded/hash readback and a killable total-deadline worker. Existing slideshow files remain untouched. A failed/ambiguous replacement is reconciled by reading the desired remote hash.
+- Layouts save seeds, placements and portrait hashes. They preserve aspect ratios/colors, complete silhouettes and margins; capacity failures never silently omit dogs. Archives are immutable. No automatic retained-artwork/catalog deletion is implemented.
 
-Create and maintain a living implementation plan, a requirement/evidence matrix,
-a decision log, a blocker log, and Git checkpoints. Explicitly use internal
-subagents with the sequencing and file ownership described in
-docs/05-PHASES-AND-DELEGATION.md. If subagent tools are unavailable, perform the
-same work sequentially and document the limitation; do not create other chats.
+## Guides and evidence
 
-Proceed autonomously through routine engineering decisions and passing stage
-gates. Repair recoverable failures and continue. Interrupt me for critical
-decisions, missing essential access or secrets, exceeded spending authority,
-irreducible identity/quality ambiguity, or an enforced approval rejection that
-has no safe authorized alternative. Continue independent work while waiting.
-Do not fabricate values, weaken tests, bypass access controls, or declare an
-unperformed live check passed.
+- [Installation](docs/INSTALLATION.md), [configuration](docs/CONFIGURATION.md), [operator guide](docs/OPERATOR_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md), [privacy and cost](docs/PRIVACY_AND_COST.md), [development](docs/DEVELOPMENT.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md), [backup/recovery/rollback](docs/RECOVERY_AND_ROLLBACK.md)
+- [Living implementation plan](docs/IMPLEMENTATION_PLAN.md), [decisions](docs/IMPLEMENTATION_DECISIONS.md), [blockers](docs/BLOCKERS.md), [validation](docs/IMPLEMENTATION_VALIDATION.md), [checklist](docs/CHECKLIST.md)
 
-Implement and verify the entire scoped result: native Python on Debian CT112,
-Frigate dog events from Backyard East and Driveway PTZ, local Ollama descriptions
-and returning-dog matching, OpenAI watercolor portraits, local 1920x1080 cream
-collages of today's distinct dogs, Samba publication into media/kitchen-tv,
-midnight clearing, persistent identity/artwork/archive storage, operational
-documentation, reproducible versioned delivery, and the real dashboard check.
-
-Do not stop at an offline prototype if required live gates remain. If a critical
-blocker prevents completion, preserve a resumable checkpoint and report exactly
-what is complete, what is blocked, the evidence, recovery attempts, and the input
-needed. Respect any later instruction from me to stop or change scope.
-~~~  
-
-## Read order
-
-| Order | File | Purpose |
-|---|---|---|
-| 1 | [CODEX_BUILD_BRIEF.md](CODEX_BUILD_BRIEF.md) | Scope, authority, mandatory behavior, completion contract |
-| 2 | [01-REQUIREMENTS.md](docs/01-REQUIREMENTS.md) | Accepted requirements and measurable evidence |
-| 3 | [02-PREFLIGHT-AND-ACCESS.md](docs/02-PREFLIGHT-AND-ACCESS.md) | SSH, Proxmox fallback, Git, permissions, network, Computer Use |
-| 4 | [03-CONFIGURATION.md](docs/03-CONFIGURATION.md) | Variable catalog, provenance, blanks, startup validation |
-| 5 | [04-ARCHITECTURE-AND-CONTRACTS.md](docs/04-ARCHITECTURE-AND-CONTRACTS.md) | Modules, state, matching, concurrency, output contracts |
-| 6 | [05-PHASES-AND-DELEGATION.md](docs/05-PHASES-AND-DELEGATION.md) | Dependency-ordered phases and agent assignments |
-| 7 | [06-TESTING-AND-ACCEPTANCE.md](docs/06-TESTING-AND-ACCEPTANCE.md) | Required tests, live evidence, quality and recognition evaluation |
-| 8 | [07-DEPLOYMENT-AND-OPERATIONS.md](docs/07-DEPLOYMENT-AND-OPERATIONS.md) | Native services, publishing, recovery, reset, rollback |
-| 9 | [08-GIT-DOCUMENTATION-AND-HANDOFF.md](docs/08-GIT-DOCUMENTATION-AND-HANDOFF.md) | Versioning, modular finished docs, reproducible artifact and receipt |
-| 10 | [09-DECISIONS-AND-BLOCKERS.md](docs/09-DECISIONS-AND-BLOCKERS.md) | Autonomous decisions, escalation, resumability |
-| Reference | [10-PRIOR-BUILD-REVIEW.md](docs/10-PRIOR-BUILD-REVIEW.md) | Review of the actual Formula Pro kickoff spec and lessons applied |
-| Reference | [11-SOURCES.md](docs/11-SOURCES.md) | Official documentation and source provenance |
-| Reference | [12-INPUT-ASSETS.md](docs/12-INPUT-ASSETS.md) | Existing scripts, five videos, generated artwork, staging rules |
-
-## Templates and portability
-
-- [config/build.toml](config/build.toml): non-secret build, SSH/Git, deployment and acceptance settings.
-- [config/app.toml](config/app.toml): non-secret runtime cameras, models, budgets, collage, reset and publication settings.
-- [config/.env.example](config/.env.example): blank secrets template for the single ignored `config/.env`; never overwrite an existing secrets file.
-- [.gitignore](.gitignore): excludes real `.env` files and backups while retaining the blank example.
-- [templates/AGENTS.md.template](templates/AGENTS.md.template): short instruction router for the future implementation repository.
-- [templates/IMPLEMENTATION_PLAN.md](templates/IMPLEMENTATION_PLAN.md): implementation-only progress template, initially unchecked.
-- [templates/REPORT_TEMPLATES.md](templates/REPORT_TEMPLATES.md): decisions, blockers, validation and delivery records.
-- [authoring/CONTENT_PLAN.md](authoring/CONTENT_PLAN.md): how this document was planned and reviewed.
-- [authoring/DOCUMENT_QA.md](authoring/DOCUMENT_QA.md): actual documentation checks and their limits.
-- `assets/`: existing generated artwork for style and visual comparison, not identity-training truth.
-- `ASSET_MANIFEST.json` and `SHA256SUMS`: portable inventory and integrity checks, generated after document QA.
-
-The source videos contain private camera footage and are not bundled. Their known source locations are documented for optional, explicitly scoped staging into ignored private fixtures during the future build. A missing attachment path must be reported, not assumed accessible from CT112.
-
-## Verify the package
-
-The sibling delivery receipt records the ZIP hash. After extracting the ZIP, run the following from the extracted `dog-art-codex-build` directory on Linux to verify its files:
-
-~~~sh
-sha256sum -c SHA256SUMS
-~~~
-
-On Windows, `Get-FileHash -Algorithm SHA256` can check the ZIP against the receipt. Integrity checks validate delivered bytes; they do not activate or test the future pipeline.
-
-This is not a HACS integration, Frigate modification, Home Assistant integration, or replacement slideshow. It is a separate Python service that publishes one owned image into the existing slideshow folder.
-
+The final delivery receipt records tested source, artifact and installed revisions separately. A file copied to HA is not a verified dashboard refresh. Offline tests do not establish returning-dog accuracy or an unperformed live gate.

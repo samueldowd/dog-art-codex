@@ -113,3 +113,23 @@ def test_utc_and_dst():
     assert clock.day() == "2026-11-01"
     with pytest.raises(ValueError):
         FrozenClock(datetime(2026, 10, 22))
+
+
+def test_crash_before_submission_releases_concurrency_without_replaying(tmp_path):
+    store = Store(tmp_path / "state/catalog.sqlite")
+    store.db.execute("INSERT INTO dogs VALUES('d',0,'accepted',NULL)")
+    ledger = Ledger(store)
+    kwargs = {"reserve_usd": 1, "daily_usd": 5, "daily_calls": 5, "concurrency": 1}
+    first, _ = ledger.reserve("first", "d", {}, "2026-10-22", 0, **kwargs)
+    ledger.recover()
+    assert (
+        store.db.execute(
+            "SELECT state FROM requests WHERE request_id=?", (first["request_id"],)
+        ).fetchone()[0]
+        == "failed_before_submission"
+    )
+    old, created = ledger.reserve("first", "d", {}, "2026-10-22", 1, **kwargs)
+    assert not created and old["request_id"] == first["request_id"]
+    _, created = ledger.reserve("second", "d", {}, "2026-10-22", 1, **kwargs)
+    assert created
+    store.close()

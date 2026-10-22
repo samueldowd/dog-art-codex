@@ -2,6 +2,10 @@
 
 SCHEMAS = {
     "app": {
+        "OLLAMA_MODEL_DIGEST": "string",
+        "LOCAL_DOG_DETECTOR": "string",
+        "VISIBILITY_CALIBRATION_PATH": "string",
+        "NATIVE_FRAME_CAMERA_IDS": "array[string]",
         "APP_DATA_ROOT": "string",
         "FRIGATE_BASE_URL": "string",
         "FRIGATE_AUTH_MODE": "string",

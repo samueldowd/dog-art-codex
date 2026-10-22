@@ -1,0 +1,18 @@
+Built-in imagegen; transparent_background: true
+Subject references: source/dog-reference-04.png and source/dog-reference-01.png, cropped from the user's video.
+Style reference: output/aircraft-collage-cream-1920x1080.png.
+The dog is distant in the video; fine facial details are interpreted.
+
+Use case: style-transfer
+Asset type: isolated dog illustration as a transparent PNG.
+
+Input image 1: PRIMARY SUBJECT reference, an enlarged video crop of the dog walking left with its head raised.
+Input image 2: SECONDARY SUBJECT reference, another crop of the SAME dog showing its fluffy coat, compact body, tail, and harness.
+Input image 3: STYLE reference ONLY, the user's recent aircraft collage. Match its refined natural-history pencil-and-watercolor illustration technique. Do not include aircraft, their markings, cream paper, or the collage layout in the output.
+
+Primary request: Illustrate the dog in the first two references in the same delicate natural-history field-guide style as the aircraft artwork. Use very fine light gray graphite or ink contours, tiny controlled stippling, subtle pencil grain, and soft translucent watercolor washes. Individual soft fur strokes should be carefully drawn, with gently warm off-white fur highlights and restrained cool gray shadows. Lightly hand drawn, quiet, precise, airy, and observational, with low to moderate contrast. No heavy black outlines, heavy crosshatching, sepia aging, cartoon styling, glossy photorealism, or dramatic lighting.
+
+Subject: one small compact shaggy dog, mostly white to soft ivory, with subtle gray-beige shading visible in its ears and coat, a short muzzle, small dark nose and eyes, floppy furred ears, short legs, fluffy paws, and a plume tail curled upward over the back. Preserve the visible dark harness across its shoulders and around its torso. Use the left-facing walking pose from image 1, with the head raised enough to show the face and all of the body, legs, paws, ears, and curled tail readable. Preserve the dog's actual build and coat distribution as visible. The video crops have limited resolution: make a coherent, sensitive illustration from their visible features without inventing distinctive large coat patches, accessories, or a different dog. Do not replicate compression blocks, surveillance sharpening, or pixel blur as part of the drawing. No particular pedigree or breed is specified.
+
+Composition: full-body dog by itself, centered on a landscape canvas with clean generous margins. Keep all paws, ears, and tail fully in frame. One dog only. Retain the harness but remove the leash extending away from it.
+Background: genuinely transparent alpha everywhere outside the dog, including open gaps between its legs and around fine fur edges. No ground, no pavement, no leaves, no human, no leash, no scenery, no cream rectangle, no background paint, no haze, no cast shadow, no glow, no frame, no labels, no text, and no watermark. Pencil and watercolor textures stay inside the dog's silhouette; keep the edge delicate and clean.

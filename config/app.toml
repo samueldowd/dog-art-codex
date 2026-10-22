@@ -1,5 +1,5 @@
 # Dog Art runtime application configuration, v1.1.0
-# Non-secret settings; safe to track in the private implementation repository.
+# Non-secret settings; safe to track; actual existing remote visibility verified separately.
 # KNOWN = user-stated; DEFAULT = proposed choice; UNKNOWN = unconfigured.
 # Empty strings/arrays are placeholders, never implicit permission to enable a feature.
 # Replace blank numeric/boolean placeholders with native TOML numbers/booleans when known.
@@ -26,6 +26,8 @@ FRIGATE_CAMERA_DISPLAY_NAMES = ["Backyard East","Driveway PTZ"]
 # UNKNOWN: Required verified list of exactly the two selected machine camera IDs.
 # TYPE: array[string]
 FRIGATE_CAMERA_IDS = ["backyard_east", "driveway_ptz"]
+# Only verified same-sensor detect/record mappings. Driveway PTZ records wide lens by user choice.
+NATIVE_FRAME_CAMERA_IDS = ["backyard_east"]
 # DEFAULT: Prefer verified MQTT; permit authenticated API polling if equivalent and documented.
 # TYPE: string
 FRIGATE_EVENT_SOURCE = "auto"
@@ -67,29 +69,33 @@ FRAMES_PER_DOG = 6
 # DEFAULT: Crop from native resolution first, then resize model inputs; never downscale a distant dog away.
 # TYPE: integer
 MODEL_INPUT_MAX_EDGE_PX = 1280
-# UNKNOWN: Calibrate from actual quality/evaluation; do not invent a passing threshold.
+# Retired compatibility setting: no minimum crop-size cutoff, per user instruction.
 # TYPE: integer
-MIN_DOG_CROP_EDGE_PX = ""
+MIN_DOG_CROP_EDGE_PX = 0
 # KNOWN: User-supplied local server address.
 # TYPE: string
 OLLAMA_HOST = "192.168.7.134"
 # UNKNOWN: Scheme/port unverified. A common candidate is http://192.168.7.134:11434; verify before filling.
 # TYPE: string
 OLLAMA_BASE_URL = "http://192.168.7.134:11434"
-# UNKNOWN: Exact requested Gemma model tag placeholder, intentionally blank.
+# VERIFIED: Exact existing model selected by user and checked live.
 # TYPE: string
-OLLAMA_MODEL = "llama3.2-vision"
+OLLAMA_MODEL = "qwen3-vl:8b"
+# Verified exact model digest; blank prevents pinned live verification.
+OLLAMA_MODEL_DIGEST = "9cf69da2b16d097f7def535917c4b55a95d6c7ee5700eb69ab86b01b3cfca487"
 # UNKNOWN: Reuse a suitable local image encoder if present; otherwise choose within resource/download/license bounds.
 # TYPE: string
-LOCAL_IMAGE_ENCODER = ""
+LOCAL_IMAGE_ENCODER = "/var/lib/dog-art/models/encoder.json"
+# Optional explicit local per-frame detector manifest; no implicit downloads.
+LOCAL_DOG_DETECTOR = "/var/lib/dog-art/models/detector.json"
 # DEFAULT: Safe initial device choice; use verified available acceleration through a documented decision.
 # TYPE: string
-LOCAL_ENCODER_DEVICE = "cuda:0"
+LOCAL_ENCODER_DEVICE = "cpu"
 
 # Identity
 # DEFAULT: No uncalibrated automatic merges. Switch to calibrated_auto only after acceptance evidence.
 # TYPE: string
-IDENTITY_MODE = "shadow"
+IDENTITY_MODE = "per_observation"
 # UNKNOWN: Model-specific threshold from labeled independent-event calibration.
 # TYPE: number
 IDENTITY_MATCH_THRESHOLD = ""
@@ -102,6 +108,8 @@ IDENTITY_SCORE_MARGIN = ""
 # UNKNOWN: Versioned calibration metadata and private held-out dataset reference.
 # TYPE: string
 IDENTITY_CALIBRATION_PATH = ""
+# Separately reviewed local visibility evaluation; blank retains review-only full-body status.
+VISIBILITY_CALIBRATION_PATH = ""
 
 # OpenAI
 # UNKNOWN: Verify a currently available image model with transparent PNG support and pricing.
@@ -193,7 +201,7 @@ RESET_LOCAL_TIME = "00:00:00"
 PUBLISH_ENABLED = false
 # UNKNOWN: Actual HA Samba server name/address; not inferred from the Ollama host.
 # TYPE: string
-SMB_HOST = ""
+SMB_HOST = "192.168.7.153"
 # DEFAULT: Standard SMB candidate; verify accessibility.
 # TYPE: integer
 SMB_PORT = 445

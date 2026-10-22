@@ -80,7 +80,7 @@ class Ledger:
                 db.execute("SELECT * FROM requests WHERE request_id=?", (rid,)).fetchone()
             ), True
 
-    def transition(self, request_id, expected, state, *, remote_id=None, usage=None):
+    def transition(self, request_id, expected, state, *, remote_id=None, usage=None, db=None):
         allowed = {
             "reserved": {"submitting", "failed_before_submission"},
             "submitting": {"succeeded", "indeterminate", "rejected"},
@@ -93,7 +93,9 @@ class Ledger:
         }
         if state not in allowed.get(expected, set()):
             raise BudgetError("invalid request transition")
-        with self.store.transaction() as db:
+        from contextlib import nullcontext
+
+        with self.store.transaction() if db is None else nullcontext(db) as db:
             changed = db.execute(
                 "UPDATE requests SET state=?,remote_id=coalesce(?,remote_id),usage=coalesce(?,usage) WHERE request_id=? AND state=?",
                 (
@@ -112,8 +114,31 @@ class Ledger:
             )
 
     def recover(self):
-        with self.store.transaction() as db:
+        # The same kill-released file barrier surrounds every paid submission.
+        # A second startup cannot invalidate a reservation held by a live sender.
+        from .daily import application_lock
+        from .safety import owned_path
+
+        root = self.store.path.parent.absolute()
+        lock = owned_path(root, "locks/paid.lock", create_parent=True)
+        with application_lock(lock), self.store.transaction() as db:
+            orphaned = db.execute(
+                "SELECT request_id,state FROM requests WHERE state IN ('reserved','submitting')"
+            ).fetchall()
+            db.execute(
+                "UPDATE portraits SET state='failed_before_submission' WHERE recipe_key IN (SELECT recipe_key FROM requests WHERE state='reserved')"
+            )
+            db.execute(
+                "UPDATE requests SET state='failed_before_submission' WHERE state='reserved'"
+            )
             db.execute(
                 "UPDATE portraits SET state='indeterminate' WHERE recipe_key IN (SELECT recipe_key FROM requests WHERE state='submitting')"
             )
             db.execute("UPDATE requests SET state='indeterminate' WHERE state='submitting'")
+            for row in orphaned:
+                self.store.audit(
+                    "paid_crash_recovery",
+                    {"request_id": row["request_id"], "from": row["state"]},
+                    __import__("time").time(),
+                    db,
+                )

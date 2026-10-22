@@ -1,0 +1,15 @@
+# Backup, recovery and rollback
+
+`backup --output NEW_PROTECTED_PATH.sqlite` uses SQLite's supported online backup API, including committed WAL state. It refuses an existing destination. This is a **database** backup; also preserve immutable referenced portraits/reference crops/archive PNG+JSON files and non-secret config/model manifests with hashes. Protect secrets separately; never include them in public receipts or release archives. Do not copy a live WAL database file alone.
+
+Before promotion: record active release/source SHA, config/model versions, service/timer state, current day/generation and remote hash. Take a compatible database backup and referenced-asset inventory. Schema1 refuses newer/unknown schemas; no silent downgrade or destructive migration exists. The current initial release creates schema1; future schema changes require a new backed-up migration and tests.
+
+For a failed release, stop only Dog Art's worker/timer as needed. Select the prior verified release and compatible database backup; preserve the failed database and all retained artwork for diagnosis. Restore state through a protected application-only procedure, restore the correct `/opt/dog-art/current` pointer, validate config/import/service user, then start worker/timer. Reconcile the actual **current** local day, rebuild its accepted membership and publish only the latest desired output. Do not restore yesterday's remote collage merely because it was the last successful file.
+
+Queue recovery uses lease tokens/finite attempts. Crashed possible paid submissions become indeterminate and cannot be replayed automatically. Orphan pre-submission reservations become failed-before-submission under the paid barrier. A timed-out SMB replacement may have succeeded; read/compare the desired hash on recovery rather than replaying an obsolete image. Dependency faults remain explicit and independent source/reset work continues.
+
+Identity assignment/merge/split/undo is auditable and preserves original observations/historical collage bytes. Rebuild current membership from accepted observation timestamps after corrections. Do not regenerate every portrait automatically after a merge or change historical pixels.
+
+A controlled reset test uses isolated state/injected clocks plus the installed timer schedule. Live blank/restore affects only the owned image, verifies real dashboard display, then rebuilds/restores the valid current day. Never alter host time, erase the permanent catalog, delete retained archives, change LXC isolation, reboot a host or restart unrelated services as a rollback shortcut.
+
+On every recovery record exact release/state/model revisions, commands, observed service/queue status, remote readback and actual UI evidence. Production rollback and actual service-restart acceptance are currently NOT RUN until recorded in validation.

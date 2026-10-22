@@ -121,6 +121,8 @@ class Settings:
             ],
             "publish": ["SMB_HOST", "SMB_SHARE", "SMB_SUBDIRECTORY", "PUBLISH_FILENAME"],
         }.get(stage, [])
+        if stage == "identity" and self.get("IDENTITY_MODE") == "per_observation":
+            required = ["LOCAL_IMAGE_ENCODER"]
         result = [k for k in required if self.values.get(k) in ("", None, [])]
         if stage == "portrait":
             if not self.get("OPENAI_GENERATION_ENABLED"):
@@ -137,6 +139,8 @@ class Settings:
 def load_settings(config: Path, secrets_file: Path, *, environ=None) -> Settings:
     values = load_toml(config, "app")
     secrets = load_secrets(secrets_file, environ)
+    if values.get("IDENTITY_MODE") not in ("shadow", "calibrated_auto", "per_observation"):
+        raise ConfigError("unsupported IDENTITY_MODE")
     if values.get("FRIGATE_AUTH_MODE") not in ("", "none", "bearer", "session", "basic"):
         raise ConfigError("unsupported FRIGATE_AUTH_MODE")
     mode = values.get("FRIGATE_AUTH_MODE")

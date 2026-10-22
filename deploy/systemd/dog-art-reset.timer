@@ -1,0 +1,11 @@
+[Unit]
+Description=Dog Art midnight in America/New_York
+
+[Timer]
+OnCalendar=*-*-* 00:00:00 America/New_York
+Persistent=true
+AccuracySec=1s
+Unit=dog-art-reset.service
+
+[Install]
+WantedBy=timers.target

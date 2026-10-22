@@ -1,10 +1,13 @@
 # Blocker log
 
-| ID | State | Gate and evidence | Attempts / exact resumption input |
+| ID | State | Gate / measured evidence | Recovery attempts and exact next input |
 |---|---|---|---|
-| B001 | RESOLVED | CTID 110 vs hostname CT112 | User clarified numeric ID 110; direct SSH matches hostname/root disk. |
-| B002 | OPEN | H native installation requires administrative access | Direct SSH works as chatgpt; sudo -n requires password. Proxmox fallback same password boundary. Preserve interactive sudo; request normal authentication for concrete install. |
-| B003 | OPEN | D/H identity quality | Encoder, calibration, independent labels/returns/lookalikes not configured. Build shadow/review; inspect authorized events before requesting labels. |
-| B004 | OPEN | H publication/UI | SMB host/mapping and exact dashboard origin/behavior not yet verified. Discover HA read-only; credentials present but never printed. |
+| B001 | RESOLVED | CT112 hostname versus numeric ID | User confirmed ID110; strict direct SSH hostname/root-volume verified. Never target112. |
+| B002 | OPEN for final installation | Prerequisites installed by human through normal sudo; production release/service absent | Direct SSH available; sudo requires password, as does Proxmox fallback. Terminal Computer Use was rejected; no bypass. Stage exact reviewed artifact/models/secrets, then human runs one normal authenticated command. |
+| B003 | PARTLY DEFERRED by user | Returning-dog recognition deferred; full-body quality still required | Generic encoder and review/calibration tooling implemented; four reviewedPTZevents include three fragments of one visit. No approved independent reference/calibration/holdout labels across cameras/dates/lookalikes/novel/low-quality/ambiguous cases. User permits duplicates and defers return matching; selected per_observation mode needs no identity calibration. Manual/full-body quality review still applies; no fabricated thresholds or physical identity claims. |
+| B004 | IN PROGRESS | Current owned PNG, actual picture-card update/blank/restore | SMB host/share/path and signed/encrypted non-image staging/replace/readback/cleanup PASS. User clarified existing picture card points to missing ownedPNG at common-commands/test-card. Verify actual rendering after controlled output; no dashboard redesign/change needed now. |
+| B005 | RESOLVED | Disk floor2048MiB | User expanded root to40206MiB;32894MiB available initially after expansion,32534MiB after fresh test venv. Keep configured floor; no retained-data deletion/resource changes by agent. |
+| B006 | BLOCKED, preserved by human decision | Driveway records wide01_main and detects PTZ02_sub | Native/source frames show differentFOV; rejected crop smoke. User explicitly declines recording-source switch. Native frames allowed only for verifiedBackyardEast; cleanPTZsnapshots still analyzed. Full nativePTZgate cannot pass within current recording boundary. |
+| B007 | OPEN per-observation quality | Backyard native association fails; small fallback now retained | User removed crop size floor. Rerun produces small real crop and calls local8b; response hits2048token limit with incomplete JSON on three bounded attempts, explicitly rejected. Larger protectedPTZcrop local8b/DINO compatibility passed. No inferred full-body/identity acceptance. |
 
-No paid request, install or live publish performed. Other discovery remains in progress, not declared blocked prematurely.
+Paid submissions0; accepted production identities0; production currentPNG writes0 at this checkpoint. Runtime generation/publication disabled. No indeterminate paid outcome. Logs preserve required blocked/not-run distinctions. Independent deployment/display/recovery work continues while labels/nativePTZgates remain blocked.

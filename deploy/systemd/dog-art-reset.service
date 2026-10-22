@@ -1,0 +1,17 @@
+[Unit]
+Description=Dog Art current-date reconciliation and guarded publication
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=dog-art
+Group=dog-art
+ExecStart=/opt/dog-art/current/venv/bin/dog-art --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env rollover --publish
+TimeoutStartSec=90
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/dog-art
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

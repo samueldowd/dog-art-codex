@@ -1,0 +1,27 @@
+[Unit]
+Description=Dog Art native pipeline (shadow until calibrated)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dog-art
+Group=dog-art
+Environment=DOG_ART_MODE=shadow
+ExecStart=/opt/dog-art/current/venv/bin/dog-art --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env run --mode ${DOG_ART_MODE}
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/dog-art
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryHigh=768M
+MemoryMax=900M
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target
