@@ -1,0 +1,96 @@
+# Dog Art build/deployment configuration, v1.1.0
+# Non-secret settings; safe to track in the private implementation repository.
+# KNOWN = user-stated; DEFAULT = proposed choice; UNKNOWN = unconfigured.
+# Empty strings/arrays are placeholders, never implicit permission to enable a feature.
+# Replace blank numeric/boolean placeholders with native TOML numbers/booleans when known.
+# Never put API keys, tokens, passwords or service login names in this file.
+
+# Build and access
+# DEFAULT: Proposed application/repository label; not an existing verified repo.
+# TYPE: string
+PROJECT_NAME = "dog-art-pipeline"
+# KNOWN: User-selected local checkout, prepared on 2026-10-22.
+# TYPE: string
+DEV_REPO_DIR = "C:/Users/Sam/Documents/dog-art-codex-build-v1.1.0/dog-art-codex-build"
+# UNKNOWN: Verified target remote URL without embedded credentials; never the FPA reference repo.
+# TYPE: string
+GIT_REMOTE_URL = ""
+# DEFAULT: Git GUI initialized this local repository on master; verified from .git/HEAD.
+# TYPE: string
+GIT_BASE_BRANCH = "master"
+# KNOWN: Git author name supplied by the user for this repository.
+# TYPE: string
+GIT_AUTHOR_NAME = "Sam Dowd"
+# KNOWN: Git author email supplied by the user for this repository.
+# TYPE: string
+GIT_AUTHOR_EMAIL = "sam@samueldowd.com"
+# DEFAULT: local_only or explicitly configured push_branch; merging/releases are separate.
+# TYPE: string
+GIT_REMOTE_POLICY = "local_only"
+# UNKNOWN: Direct SSH connection/alias on the executing host.
+# TYPE: string
+CT112_SSH_ALIAS = ""
+# UNKNOWN: Container address; not the Proxmox host.
+# TYPE: string
+CT112_HOST = ""
+# UNKNOWN: Authorized login identity.
+# TYPE: string
+CT112_SSH_USER = ""
+# UNKNOWN: Path to an existing permitted key; never its content.
+# TYPE: string
+SSH_IDENTITY_FILE = ""
+# UNKNOWN: Trusted fingerprint/host-key verification record.
+# TYPE: string
+SSH_VERIFIED_HOST_KEY = ""
+# KNOWN: User-specified fallback connection name; actual access still needs verification.
+# TYPE: string
+PROXMOX_SSH_ALIAS = "proxmox-host"
+# KNOWN: User-specified Proxmox container ID.
+# TYPE: integer
+DEPLOY_TARGET_CTID = 112
+
+# Runtime paths
+# DEFAULT: Proposed application release root; inspect existing ownership first.
+# TYPE: string
+APP_CODE_ROOT = "/opt/dog-art"
+# DEFAULT: Deployed non-secret runtime TOML path; startup receives it explicitly.
+# TYPE: string
+APP_CONFIG_FILE = "/etc/dog-art/app.toml"
+# DEFAULT: Single deployed secrets file; provision separately and never commit.
+# TYPE: string
+APP_SECRETS_FILE = "/etc/dog-art/.env"
+# DEFAULT: Dedicated unprivileged application user.
+# TYPE: string
+SERVICE_USER = "dog-art"
+
+# Video and local AI
+# DEFAULT: Per-model download guard; larger/new infrastructure changes need an explicit decision.
+# TYPE: integer
+MODEL_DOWNLOAD_MAX_MB = 500
+
+# OpenAI
+# UNKNOWN: Explicit numeric cap for paid build/evaluation calls; blank blocks paid calls.
+# TYPE: number
+OPENAI_BUILD_BUDGET_USD = ""
+
+# Collage and reset
+# DEFAULT: Controlled owned-image blank/restore test plus timer/clock tests; natural observation may supplement.
+# TYPE: string
+RESET_ACCEPTANCE_MODE = "controlled_on_target"
+
+# Publication and HA
+# KNOWN: Normalized requested HA path; mapping must be verified, not assumed.
+# TYPE: string
+HA_MEDIA_DIRECTORY = "/media/kitchen-tv"
+# UNKNOWN: Actual existing Kitchen TV dashboard URL for visual acceptance.
+# TYPE: string
+HA_DASHBOARD_URL = ""
+# UNKNOWN: Stable view path if applicable.
+# TYPE: string
+HA_DASHBOARD_VIEW_PATH = ""
+# UNKNOWN: Existing card identification/location; discover read-only.
+# TYPE: string
+HA_SLIDESHOW_CARD_LOCATION = ""
+# UNKNOWN: Observed rescan/cache behavior; validate before claiming live updates.
+# TYPE: number
+HA_SLIDESHOW_REFRESH_SECONDS = ""

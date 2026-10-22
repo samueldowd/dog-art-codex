@@ -1,0 +1,84 @@
+Built-in imagegen, one call per dog; transparent_background: true.
+Fine facial and obscured details are interpreted from distant surveillance footage, particularly the fourth video recorded at dusk.
+
+VIDEO 1: 1-1792672686.145351-2g4wz6.mp4
+Primary subject: source/video-2g4wz6/reference-primary.png
+Secondary subject: source/video-2g4wz6/reference-secondary.png
+Style: output/dog-watercolor-transparent.png
+
+Use case: style-transfer
+Asset type: one isolated full-body dog illustration as a transparent PNG.
+Input image 1: PRIMARY SUBJECT reference, an enlarged crop from the requested video.
+Input image 2: SECONDARY SUBJECT reference, another crop of the SAME dog from that video.
+Input image 3: STYLE reference ONLY, the previously completed white-dog illustration. Match its natural-history pencil-and-watercolor technique. Do not copy the white dog's breed, body shape, coat, curled tail, or black harness.
+
+Style: delicate Audubon-inspired natural-history specimen illustration, very fine light gray graphite or ink contours, controlled tiny stippling, subtle pencil grain, and softly brushed translucent watercolor washes. Detailed but restrained fur strokes, gently warm highlights and cool gray shadows. Quiet, precise, airy, observational, with low to moderate contrast. No cartoon exaggeration, thick black outlines, dense crosshatching, sepia aging, glossy photorealism, or dramatic lighting.
+
+Subject: the medium-to-large black short-haired dog from images 1 and 2. A solid, sturdy body, smooth near-black coat with softly modeled charcoal highlights, a long dark muzzle, naturally folded floppy ears, long legs, dark paws, and a long tapered tail held nearly horizontal with a slightly lifted tip. Preserve its narrow pale gray collar and the small light area at the lower throat visible in the references; do not add broad white coat patches or white socks. Use a relaxed left-facing walking profile, one front leg stepping forward and the head held roughly level. Preserve its actual substantial build without making it a fluffy dog.
+
+Reference fidelity: These are low-resolution surveillance crops. Preserve the subject's visible size, silhouette, proportions, coat distribution, ears, tail, and accessories. Interpret obscured details conservatively with coherent anatomy, without inventing distinctive patches, elaborate gear, or a particular pedigree. Do not imitate compression blocks, video noise, motion blur, or surveillance sharpening. Remove people and their legs, hands, clothing, and shoes. Reconstruct any partly hidden dog limb naturally.
+Composition: exactly one complete dog, centered on a landscape canvas with clear margins. Show the entire head, ears, all legs and paws, and complete tail. Retain only the dog's visible collar or headcollar as specified; remove every leash extending away from it. No cropping of the animal.
+Background: genuinely transparent alpha outside the dog, including the spaces between legs and around fine fur. Clean, delicate isolated edges. No road, pavement, leaves, scenery, person, leash, ground, cast shadow, glow, haze, cream rectangle, colored backdrop, paper background, border, text, caption, watermark, or extra animal. Pencil and watercolor texture remains within the dog's silhouette.
+
+======================================================================
+
+VIDEO 2: 2-1792669065.122732-yr0l4y.mp4
+Primary subject: source/video-yr0l4y/reference-primary.png
+Secondary subject: source/video-yr0l4y/reference-secondary.png
+Style: output/dog-watercolor-transparent.png
+
+Use case: style-transfer
+Asset type: one isolated full-body dog illustration as a transparent PNG.
+Input image 1: PRIMARY SUBJECT reference, an enlarged crop from the requested video.
+Input image 2: SECONDARY SUBJECT reference, another crop of the SAME dog from that video.
+Input image 3: STYLE reference ONLY, the previously completed white-dog illustration. Match its natural-history pencil-and-watercolor technique. Do not copy the white dog's breed, body shape, coat, curled tail, or black harness.
+
+Style: delicate Audubon-inspired natural-history specimen illustration, very fine light gray graphite or ink contours, controlled tiny stippling, subtle pencil grain, and softly brushed translucent watercolor washes. Detailed but restrained fur strokes, gently warm highlights and cool gray shadows. Quiet, precise, airy, observational, with low to moderate contrast. No cartoon exaggeration, thick black outlines, dense crosshatching, sepia aging, glossy photorealism, or dramatic lighting.
+
+Subject: the medium-to-large curly gray-brown dog from images 1 and 2. Its body coat is clipped, curly and smoky taupe gray-brown, with a fluffier head, long hanging curly ears, a lighter silver-gray muzzle and brow, long legs with lighter gray lower legs, and a fluffy tail curled high over its rear. Preserve the visible simple dark headcollar strap around the muzzle and neck; remove its trailing leash. Use a right-facing walking profile with head raised, one foreleg moving forward, and the expressive but naturally proportioned face visible. Preserve this dog's long-legged build and distinctive curled tail; do not substitute the small white dog in the style reference.
+
+Reference fidelity: These are low-resolution surveillance crops. Preserve the subject's visible size, silhouette, proportions, coat distribution, ears, tail, and accessories. Interpret obscured details conservatively with coherent anatomy, without inventing distinctive patches, elaborate gear, or a particular pedigree. Do not imitate compression blocks, video noise, motion blur, or surveillance sharpening. Remove people and their legs, hands, clothing, and shoes. Reconstruct any partly hidden dog limb naturally.
+Composition: exactly one complete dog, centered on a landscape canvas with clear margins. Show the entire head, ears, all legs and paws, and complete tail. Retain only the dog's visible collar or headcollar as specified; remove every leash extending away from it. No cropping of the animal.
+Background: genuinely transparent alpha outside the dog, including the spaces between legs and around fine fur. Clean, delicate isolated edges. No road, pavement, leaves, scenery, person, leash, ground, cast shadow, glow, haze, cream rectangle, colored backdrop, paper background, border, text, caption, watermark, or extra animal. Pencil and watercolor texture remains within the dog's silhouette.
+
+======================================================================
+
+VIDEO 3: 3-1792666653.806317-egd9g6.mp4
+Primary subject: source/video-egd9g6/reference-primary.png
+Secondary subject: source/video-egd9g6/reference-secondary.png
+Style: output/dog-watercolor-transparent.png
+
+Use case: style-transfer
+Asset type: one isolated full-body dog illustration as a transparent PNG.
+Input image 1: PRIMARY SUBJECT reference, an enlarged crop from the requested video.
+Input image 2: SECONDARY SUBJECT reference, another crop of the SAME dog from that video.
+Input image 3: STYLE reference ONLY, the previously completed white-dog illustration. Match its natural-history pencil-and-watercolor technique. Do not copy the white dog's breed, body shape, coat, curled tail, or black harness.
+
+Style: delicate Audubon-inspired natural-history specimen illustration, very fine light gray graphite or ink contours, controlled tiny stippling, subtle pencil grain, and softly brushed translucent watercolor washes. Detailed but restrained fur strokes, gently warm highlights and cool gray shadows. Quiet, precise, airy, observational, with low to moderate contrast. No cartoon exaggeration, thick black outlines, dense crosshatching, sepia aging, glossy photorealism, or dramatic lighting.
+
+Subject: the medium-sized black-and-white dog from images 1 and 2. A predominantly black, relatively smooth short-to-medium coat, a lean sturdy body, white around the neck and chest, pale muzzle as visible, white lower legs and paws, and a long black tail carried upward with a small pale tip visible in the primary reference. Keep the head mostly dark and preserve the actual boundaries of the visible white neck and leg markings without adding a huge facial blaze. Naturally folded ears. Use a right-facing walking profile with head gently lowered as it investigates ahead, based on the primary reference, while keeping the face readable. Retain only any simple collar visible; do not add a harness.
+
+Reference fidelity: These are low-resolution surveillance crops. Preserve the subject's visible size, silhouette, proportions, coat distribution, ears, tail, and accessories. Interpret obscured details conservatively with coherent anatomy, without inventing distinctive patches, elaborate gear, or a particular pedigree. Do not imitate compression blocks, video noise, motion blur, or surveillance sharpening. Remove people and their legs, hands, clothing, and shoes. Reconstruct any partly hidden dog limb naturally.
+Composition: exactly one complete dog, centered on a landscape canvas with clear margins. Show the entire head, ears, all legs and paws, and complete tail. Retain only the dog's visible collar or headcollar as specified; remove every leash extending away from it. No cropping of the animal.
+Background: genuinely transparent alpha outside the dog, including the spaces between legs and around fine fur. Clean, delicate isolated edges. No road, pavement, leaves, scenery, person, leash, ground, cast shadow, glow, haze, cream rectangle, colored backdrop, paper background, border, text, caption, watermark, or extra animal. Pencil and watercolor texture remains within the dog's silhouette.
+
+======================================================================
+
+VIDEO 4: 4-1792621194.489406-rf85ux.mp4
+Primary subject: source/video-rf85ux/reference-primary.png
+Secondary subject: source/video-rf85ux/reference-secondary.png
+Style: output/dog-watercolor-transparent.png
+
+Use case: style-transfer
+Asset type: one isolated full-body dog illustration as a transparent PNG.
+Input image 1: PRIMARY SUBJECT reference, an enlarged crop from the requested video.
+Input image 2: SECONDARY SUBJECT reference, another crop of the SAME dog from that video.
+Input image 3: STYLE reference ONLY, the previously completed white-dog illustration. Match its natural-history pencil-and-watercolor technique. Do not copy the white dog's breed, body shape, coat, curled tail, or black harness.
+
+Style: delicate Audubon-inspired natural-history specimen illustration, very fine light gray graphite or ink contours, controlled tiny stippling, subtle pencil grain, and softly brushed translucent watercolor washes. Detailed but restrained fur strokes, gently warm highlights and cool gray shadows. Quiet, precise, airy, observational, with low to moderate contrast. No cartoon exaggeration, thick black outlines, dense crosshatching, sepia aging, glossy photorealism, or dramatic lighting.
+
+Subject: the medium-to-large golden-tan dog from images 1 and 2, recorded at dusk. Warm golden to reddish-tan body, a softly shaggy or lightly feathered coat, lighter cream-toned muzzle and lower legs as visible, a moderately long muzzle, dark nose, naturally hanging ears, and a natural long tail extending behind the body. Use a right-facing walking side profile with the head raised and the front leg stepping. Preserve the visible build and coat rather than inventing a specific breed or strong additional white markings. The night footage is dark and blurred: interpret fine details conservatively and paint the dog in soft neutral daylight so the coat can be seen, without importing the surveillance image's dark blue cast or orange street-light glow. Do not add the style reference's black harness or curled plume tail; include a subtle simple collar only if visible.
+
+Reference fidelity: These are low-resolution surveillance crops. Preserve the subject's visible size, silhouette, proportions, coat distribution, ears, tail, and accessories. Interpret obscured details conservatively with coherent anatomy, without inventing distinctive patches, elaborate gear, or a particular pedigree. Do not imitate compression blocks, video noise, motion blur, or surveillance sharpening. Remove people and their legs, hands, clothing, and shoes. Reconstruct any partly hidden dog limb naturally.
+Composition: exactly one complete dog, centered on a landscape canvas with clear margins. Show the entire head, ears, all legs and paws, and complete tail. Retain only the dog's visible collar or headcollar as specified; remove every leash extending away from it. No cropping of the animal.
+Background: genuinely transparent alpha outside the dog, including the spaces between legs and around fine fur. Clean, delicate isolated edges. No road, pavement, leaves, scenery, person, leash, ground, cast shadow, glow, haze, cream rectangle, colored backdrop, paper background, border, text, caption, watermark, or extra animal. Pencil and watercolor texture remains within the dog's silhouette.

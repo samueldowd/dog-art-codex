@@ -1,0 +1,30 @@
+{
+  "name": "dog-art-codex-build",
+  "version": "1.1.0",
+  "prepared_date": "2026-10-22",
+  "entrypoint": "README.md",
+  "authoritative_brief": "CODEX_BUILD_BRIEF.md",
+  "purpose": "Future autonomous implementation specification; document delivery only.",
+  "implementation_status": "NOT STARTED",
+  "production_connections_performed": false,
+  "credentials_included": false,
+  "private_videos_included": false,
+  "reviewed_fpa_commit": "f418e53cc700e65f2c5351f8f5c11a935ad46de0",
+  "reviewed_fpa_path": "docs/BUILD_SPEC.md",
+  "requirements": 34,
+  "test_scenarios": 36,
+  "configuration_variables": 103,
+  "configuration_files": {
+    "build": "config/build.toml",
+    "app": "config/app.toml",
+    "secrets_template": "config/.env.example"
+  },
+  "configuration_counts": {
+    "build": 26,
+    "app": 68,
+    "secrets": 9
+  },
+  "local_secrets_file_excluded": "config/.env",
+  "checksums": "SHA256SUMS",
+  "authoring_validation": "authoring/DOCUMENT_QA.md"
+}

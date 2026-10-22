@@ -1,0 +1,229 @@
+# Dog Art runtime application configuration, v1.1.0
+# Non-secret settings; safe to track in the private implementation repository.
+# KNOWN = user-stated; DEFAULT = proposed choice; UNKNOWN = unconfigured.
+# Empty strings/arrays are placeholders, never implicit permission to enable a feature.
+# Replace blank numeric/boolean placeholders with native TOML numbers/booleans when known.
+# Never put API keys, tokens, passwords or service login names in this file.
+
+# Runtime paths
+# DEFAULT: Local persistent data; SQLite must not live on SMB.
+# TYPE: string
+APP_DATA_ROOT = "/var/lib/dog-art"
+
+# Frigate and MQTT
+# UNKNOWN: Actual authorized Frigate URL and port; verify configured auth/API routes/version.
+# TYPE: string
+FRIGATE_BASE_URL = ""
+# UNKNOWN: Explicit verified auth mode; blank is not anonymous.
+# TYPE: string
+FRIGATE_AUTH_MODE = ""
+# UNKNOWN: Optional trusted custom CA path; blank means normal system trust, not verify=false.
+# TYPE: string
+FRIGATE_CA_BUNDLE = ""
+# KNOWN: Requested camera display names; map uniquely to actual Frigate IDs.
+# TYPE: array[string]
+FRIGATE_CAMERA_DISPLAY_NAMES = ["Backyard East","Driveway PTZ"]
+# UNKNOWN: Required verified list of exactly the two selected machine camera IDs.
+# TYPE: array[string]
+FRIGATE_CAMERA_IDS = []
+# DEFAULT: Prefer verified MQTT; permit authenticated API polling if equivalent and documented.
+# TYPE: string
+FRIGATE_EVENT_SOURCE = "auto"
+# UNKNOWN: Broker address, required for MQTT mode.
+# TYPE: string
+MQTT_HOST = ""
+# UNKNOWN: Actual port; do not assume plaintext or TLS.
+# TYPE: integer
+MQTT_PORT = ""
+# UNKNOWN: Required explicit true/false when MQTT mode is selected.
+# TYPE: boolean
+MQTT_TLS = ""
+# DEFAULT: Verify against the actual installation.
+# TYPE: string
+MQTT_TOPIC_PREFIX = "frigate"
+# DEFAULT: Must not collide with an existing active MQTT client.
+# TYPE: string
+MQTT_CLIENT_ID = "dog-art-ct112"
+# DEFAULT: First startup only: today's available events; remain subject to budget and identity gates.
+# TYPE: string
+EVENT_INITIAL_BACKFILL = "today"
+# DEFAULT: Overlap around the durable cursor; deduplicate. Do not truncate a long outage to this overlap.
+# TYPE: integer
+EVENT_RECONCILE_OVERLAP_SECONDS = 120
+# DEFAULT: Polling/reconciliation interval when applicable; bound request volume.
+# TYPE: integer
+EVENT_POLL_SECONDS = 15
+
+# Video and local AI
+# DEFAULT: Bound selected media windows; preserve full event metadata and choose useful windows for long events.
+# TYPE: integer
+MAX_CLIP_SECONDS = 60
+# DEFAULT: Bound each media download; reject/defer oversized media explicitly.
+# TYPE: integer
+MAX_CLIP_BYTES = 104857600
+# DEFAULT: Candidate selected views; benchmark against model context/resources.
+# TYPE: integer
+FRAMES_PER_DOG = 6
+# DEFAULT: Crop from native resolution first, then resize model inputs; never downscale a distant dog away.
+# TYPE: integer
+MODEL_INPUT_MAX_EDGE_PX = 1280
+# UNKNOWN: Calibrate from actual quality/evaluation; do not invent a passing threshold.
+# TYPE: integer
+MIN_DOG_CROP_EDGE_PX = ""
+# KNOWN: User-supplied local server address.
+# TYPE: string
+OLLAMA_HOST = "192.168.7.134"
+# UNKNOWN: Scheme/port unverified. A common candidate is http://192.168.7.134:11434; verify before filling.
+# TYPE: string
+OLLAMA_BASE_URL = ""
+# UNKNOWN: Exact requested Gemma model tag placeholder, intentionally blank.
+# TYPE: string
+OLLAMA_MODEL = ""
+# UNKNOWN: Reuse a suitable local image encoder if present; otherwise choose within resource/download/license bounds.
+# TYPE: string
+LOCAL_IMAGE_ENCODER = ""
+# DEFAULT: Safe initial device choice; use verified available acceleration through a documented decision.
+# TYPE: string
+LOCAL_ENCODER_DEVICE = "cpu"
+
+# Identity
+# DEFAULT: No uncalibrated automatic merges. Switch to calibrated_auto only after acceptance evidence.
+# TYPE: string
+IDENTITY_MODE = "shadow"
+# UNKNOWN: Model-specific threshold from labeled independent-event calibration.
+# TYPE: number
+IDENTITY_MATCH_THRESHOLD = ""
+# UNKNOWN: Threshold for confidently new identity; distinct from uncertain.
+# TYPE: number
+IDENTITY_NEW_THRESHOLD = ""
+# UNKNOWN: Required separation from the next-best candidate; calibrate.
+# TYPE: number
+IDENTITY_SCORE_MARGIN = ""
+# UNKNOWN: Versioned calibration metadata and private held-out dataset reference.
+# TYPE: string
+IDENTITY_CALIBRATION_PATH = ""
+
+# OpenAI
+# UNKNOWN: Verify a currently available image model with transparent PNG support and pricing.
+# TYPE: string
+OPENAI_IMAGE_MODEL = ""
+# DEFAULT: Proposed portrait canvas; verify compatibility with the configured model.
+# TYPE: string
+OPENAI_IMAGE_SIZE = "1536x1024"
+# DEFAULT: Proposed final-art setting; test within the configured budget.
+# TYPE: string
+OPENAI_IMAGE_QUALITY = "high"
+# KNOWN: Required transparent portrait file type.
+# TYPE: string
+OPENAI_IMAGE_FORMAT = "png"
+# KNOWN: Required actual alpha background.
+# TYPE: string
+OPENAI_BACKGROUND = "transparent"
+# DEFAULT: Bundled generated artwork, not a real surveillance crop.
+# TYPE: string
+OPENAI_STYLE_REFERENCE = "assets/style/dog-watercolor-transparent.png"
+# DEFAULT: Description plus generated style art. camera_crops requires explicit opt-in.
+# TYPE: string
+OPENAI_REFERENCE_MODE = "artwork_only"
+# DEFAULT: No private dog-camera stills leave local processing unless explicitly enabled and authorized.
+# TYPE: boolean
+ALLOW_CAMERA_CROP_UPLOAD = false
+# DEFAULT: Enable only after credential, model, budget, policy and smoke checks.
+# TYPE: boolean
+OPENAI_GENERATION_ENABLED = false
+# UNKNOWN: Explicit numeric ongoing image-generation cap; blank blocks live generation.
+# TYPE: number
+OPENAI_DAILY_BUDGET_USD = ""
+# UNKNOWN: Explicit numeric hard call count; blank blocks live generation.
+# TYPE: integer
+OPENAI_MAX_CALLS_PER_DAY = ""
+# DEFAULT: No blind replay after an uncertain paid request outcome.
+# TYPE: integer
+OPENAI_MAX_AUTOMATIC_ATTEMPTS_PER_PORTRAIT = 1
+# DEFAULT: Finite timeout; handle unknown outcome without duplicate automatic billing.
+# TYPE: integer
+OPENAI_HTTP_TIMEOUT_SECONDS = 300
+
+# Work and reliability
+# DEFAULT: Conservative CT112 baseline; still test concurrent event submissions and publication races.
+# TYPE: integer
+WORKER_CONCURRENCY = 1
+# DEFAULT: Read/download retries only; not a blanket paid-generation retry policy.
+# TYPE: integer
+READ_RETRY_ATTEMPTS = 3
+# DEFAULT: Initial bounded exponential retry backoff with jitter.
+# TYPE: integer
+RETRY_BASE_SECONDS = 5
+# DEFAULT: Maximum retry delay; retain deferred jobs and health state.
+# TYPE: integer
+RETRY_MAX_SECONDS = 300
+# DEFAULT: Reclaim expired interrupted work; paid requests need outcome reconciliation.
+# TYPE: integer
+JOB_LEASE_SECONDS = 600
+
+# Collage and reset
+# KNOWN: Full HD landscape output.
+# TYPE: integer
+COLLAGE_WIDTH = 1920
+# KNOWN: Full HD landscape output.
+# TYPE: integer
+COLLAGE_HEIGHT = 1080
+# DEFAULT: Warm cream proposal matching the requested appearance.
+# TYPE: string
+COLLAGE_BACKGROUND = "#F3EBDD"
+# KNOWN: Requested randomly placed dogs; implement seeded layout and collision checks.
+# TYPE: string
+COLLAGE_LAYOUT = "scattered"
+# DEFAULT: Output safe margin, adjustable with visual evidence.
+# TYPE: integer
+COLLAGE_MARGIN_PX = 40
+# DEFAULT: Readability guard; do not silently omit dogs if all cannot fit.
+# TYPE: integer
+COLLAGE_MIN_DOG_HEIGHT_PX = 120
+# KNOWN: User's local timezone; store raw timestamps in UTC.
+# TYPE: string
+DAY_TIMEZONE = "America/New_York"
+# DEFAULT: End-of-day interpretation: local midnight.
+# TYPE: string
+RESET_LOCAL_TIME = "00:00:00"
+
+# Publication and HA
+# DEFAULT: Enable only after target, ownership, Samba and staging checks.
+# TYPE: boolean
+PUBLISH_ENABLED = false
+# UNKNOWN: Actual HA Samba server name/address; not inferred from the Ollama host.
+# TYPE: string
+SMB_HOST = ""
+# DEFAULT: Standard SMB candidate; verify accessibility.
+# TYPE: integer
+SMB_PORT = 445
+# DEFAULT: Expected HA media share; confirm it maps to the requested directory.
+# TYPE: string
+SMB_SHARE = "media"
+# KNOWN: Requested subdirectory, after share mapping is verified.
+# TYPE: string
+SMB_SUBDIRECTORY = "kitchen-tv"
+# UNKNOWN: Optional domain; blank is allowed if the server does not require it.
+# TYPE: string
+SMB_DOMAIN = ""
+# DEFAULT: Only this final image and documented private staging names are app-owned.
+# TYPE: string
+PUBLISH_FILENAME = "dog-collage.png"
+
+# Storage and logs
+# KNOWN: Retain historical collages on CT112.
+# TYPE: boolean
+ARCHIVE_COLLAGES = true
+# UNKNOWN: Blank means no automatic archive deletion; user requested retention.
+# TYPE: integer
+ARCHIVE_RETENTION_DAYS = ""
+# UNKNOWN: Raw clip retention policy needs an explicit configured decision; never quietly delete user input.
+# TYPE: integer
+CLIP_RETENTION_DAYS = ""
+# DEFAULT: Pause new expensive/download work before exhaustion; preserve last good output.
+# TYPE: integer
+MIN_FREE_DISK_MB = 2048
+# DEFAULT: Structured redacted logs; no payload/SMB packet/API debug dumps by default.
+# TYPE: string
+LOG_LEVEL = "INFO"
+

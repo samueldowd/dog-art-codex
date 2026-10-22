@@ -1,0 +1,6 @@
+# Local secrets and backups; retain only the blank template.
+.env
+.env.*
+*.env
+!.env.example
+

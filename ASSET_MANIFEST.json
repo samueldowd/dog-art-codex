@@ -1,0 +1,137 @@
+{
+  "documentation_version": "1.1.0",
+  "prepared_date": "2026-10-22",
+  "scope": "Existing generated artwork, historical prompts and extractor reference only; no private videos or runtime implementation.",
+  "source_video_locations": "docs/12-INPUT-ASSETS.md",
+  "assets": [
+    {
+      "path": "assets/style/dog-watercolor-transparent.png",
+      "original_workspace_path": "output/dog-watercolor-transparent.png",
+      "role": "generated_style_reference",
+      "bytes": 2499470,
+      "sha256": "493d47d197fea98dadb52307fe47927fa3838cfa30c19ff7eca85a71dffd4765",
+      "identity_ground_truth": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1536,
+      "height": 1024,
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "fully_transparent_fraction": 0.548842
+    },
+    {
+      "path": "assets/portraits/dog-01-black-watercolor-transparent.png",
+      "original_workspace_path": "output/dog-01-black-watercolor-transparent.png",
+      "role": "generated_portrait_render_fixture",
+      "bytes": 2192301,
+      "sha256": "20020661ec8828e3a791f845edbb2d1ec05efabe51f89dc699e66daa396ca2a7",
+      "identity_ground_truth": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1536,
+      "height": 1024,
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "fully_transparent_fraction": 0.636045
+    },
+    {
+      "path": "assets/portraits/dog-02-curly-watercolor-transparent.png",
+      "original_workspace_path": "output/dog-02-curly-watercolor-transparent.png",
+      "role": "generated_portrait_render_fixture",
+      "bytes": 2558751,
+      "sha256": "acf03c40f3a57147e190d4bac535cc334fa694baba29c8acda770c5d1fc10475",
+      "identity_ground_truth": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1536,
+      "height": 1024,
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "fully_transparent_fraction": 0.559046
+    },
+    {
+      "path": "assets/portraits/dog-03-black-white-watercolor-transparent.png",
+      "original_workspace_path": "output/dog-03-black-white-watercolor-transparent.png",
+      "role": "generated_portrait_render_fixture",
+      "bytes": 2215941,
+      "sha256": "fafe37cb6557b1fa9852f5ef04fad562ce36c033c405f9a63ab2e49b190b4fdd",
+      "identity_ground_truth": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1536,
+      "height": 1024,
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "fully_transparent_fraction": 0.629196
+    },
+    {
+      "path": "assets/portraits/dog-04-golden-watercolor-transparent.png",
+      "original_workspace_path": "output/dog-04-golden-watercolor-transparent.png",
+      "role": "generated_portrait_render_fixture",
+      "bytes": 2477670,
+      "sha256": "bb104a15d1582b91fe347dfc64b85c6806d13d883a727d785f3c9ef6716e24fb",
+      "identity_ground_truth": false,
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1536,
+      "height": 1024,
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "fully_transparent_fraction": 0.543522
+    },
+    {
+      "path": "assets/examples/five-dogs-collage-cream-1920x1080.png",
+      "original_workspace_path": "output/five-dogs-collage-cream-1920x1080.png",
+      "role": "generated_collage_visual_target",
+      "bytes": 3452487,
+      "sha256": "915e6e2b616d34df74e895fa64005d59ce7e562829d95b47c9f4e90c5f37a407",
+      "identity_ground_truth": false,
+      "format": "PNG",
+      "mode": "RGB",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "path": "assets/prompts/dog-watercolor-prompt.txt",
+      "original_workspace_path": "output/dog-watercolor-prompt.txt",
+      "role": "historical_prompt_reference",
+      "bytes": 3035,
+      "sha256": "4e5351645929d9db45da69934765ce347351f13c0bf7e6cfed79fa8108a20212",
+      "identity_ground_truth": false
+    },
+    {
+      "path": "assets/prompts/four-dogs-imagegen-prompts.txt",
+      "original_workspace_path": "output/four-dogs-imagegen-prompts.txt",
+      "role": "historical_prompt_reference",
+      "bytes": 12973,
+      "sha256": "adebcb69e4e93cbf3eca39e94abea44d2a0ca138c41cc3d8af674061e4b2b392",
+      "identity_ground_truth": false
+    },
+    {
+      "path": "assets/prompts/five-dogs-collage-cream-prompt.txt",
+      "original_workspace_path": "output/five-dogs-collage-cream-prompt.txt",
+      "role": "historical_prompt_reference",
+      "bytes": 2930,
+      "sha256": "fb5ebde137bd3efe62f96ee0f1a9ab46e9323ccd2c11fa56cc2f1da88c189343",
+      "identity_ground_truth": false
+    },
+    {
+      "path": "reference/extract_video_frames.py.txt",
+      "original_workspace_path": ".tools/extract_video_frames.py",
+      "role": "existing_extractor_non_executable_reference",
+      "bytes": 1483,
+      "sha256": "3d023d3a9211c44e43aa1c922cd37232646892da301ffb97930769f7e984b0b1",
+      "identity_ground_truth": false
+    }
+  ]
+}

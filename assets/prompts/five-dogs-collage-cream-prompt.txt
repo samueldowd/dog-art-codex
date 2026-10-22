@@ -1,0 +1,25 @@
+Artwork composed with built-in imagegen; transparent_background: false.
+Final PNG exported at exactly 1920 x 1080 pixels.
+Input illustrations, in order:
+dog-watercolor-transparent.png
+dog-01-black-watercolor-transparent.png
+dog-02-curly-watercolor-transparent.png
+dog-03-black-white-watercolor-transparent.png
+dog-04-golden-watercolor-transparent.png
+
+Use case: compositing
+Asset type: finished five-dog collage / Full HD desktop wallpaper.
+Primary request: Create a collage using ALL FIVE supplied completed dog illustrations, each exactly once, on an opaque warm cream background. Wide landscape canvas, EXACT 16:9 aspect ratio, target output 1920 x 1080 pixels.
+
+Input image 1: the small shaggy white/ivory dog with gray-shaded floppy ears, curled plume tail, and black chest harness, walking left.
+Input image 2: the sturdy black short-haired dog with a pale collar and small light chest marking, walking left.
+Input image 3: the curly taupe gray-brown long-legged dog with curled tail and dark headcollar, walking right.
+Input image 4: the predominantly black dog with white neck, muzzle, socks and tail tip, walking right with its head lowered.
+Input image 5: the golden-tan feathered dog with lighter muzzle and legs, walking right.
+
+Treat the existing illustrations as the actual collage elements. Preserve the identity, anatomy, proportions, coat colors and markings, collars and harness, poses, facing directions, and fine pencil-and-watercolor linework of all five dogs. Do not redesign, substitute, blend, or duplicate any animal.
+
+Layout: place the five dogs in a relaxed, randomly scattered arrangement across the whole canvas, with asymmetrical offsets, varied spacing, and modest variation in displayed scale. Make it feel naturally scattered but visually balanced and uncluttered, rather than a rigid grid or a straight lineup. Keep every dog upright in its original pose. The small white dog may be a little smaller than the larger dogs. Give all five enough room to see their entire silhouettes clearly, without bodies overlapping or touching. All five dogs should be comfortably large and easy to appreciate. Keep the head, ears, tail and all paws of every dog fully visible, with a clear cream margin around the outermost extremities. No cropping.
+
+Background: flat, opaque warm cream, approximately #F3EBDD, edge to edge, matching the previous cream aircraft collage. Respect the transparent alpha in the input PNGs; discard all transparent areas and do not copy apparent black backdrops or surrounding haze/glow from the previews. No rectangles behind dogs, no halos, no drop shadows.
+Constraints: EXACTLY FIVE dogs, the five provided, one of each. No sixth dog, no missing dog. No extra objects, props, scenery, ground, captions, labels, text, title, paw-print decorations, frame, border, or watermark. Maintain the elegant delicate natural-history pencil-and-watercolor character of the existing artwork.
