@@ -19,3 +19,9 @@ private-fixtures/
 *.sqlite*
 *.db*
 models/
+
+# Public provenance only; model weights remain excluded.
+!deploy/models/
+deploy/models/*
+!deploy/models/encoder.json
+!deploy/models/detector.json

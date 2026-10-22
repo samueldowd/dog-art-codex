@@ -28,7 +28,7 @@ Regressions cover: existing spaced JSON and cached old-model descriptions; human
 
 ## Required remaining checks
 
-Deterministic delivery checksums and linked docs; installed shadow worker/timer/restart/user hardening; real independent visibility/identity evaluation; accepted new identity and bounded paid portrait quality; independent return with no new request; owned PNG SMB readback and real picture-card display/update/blank/restore; installed reset schedule/action/recovery and bounded operational observation. Required failures/blocked/not-run entries prevent an overall complete claim.
+Installed shadow worker/timer/restart/user hardening; reviewed source quality and bounded paid portrait quality; successive dog-art picture-card updates and controlled blank/restore; installed reset schedule/action/recovery and bounded operational observation. Recognition evaluation and physical-return reuse are explicitly deferred by the user; native PTZ remains blocked by the preserved recording-source decision. Initial owned cream PNG/readback/picture-card rendering and reproducible delivery checks have passed, as recorded below. Required failures/blocked/not-run entries prevent an overall complete claim.
 
 ## Subsequent live evidence (checkpoint440db67)
 
@@ -42,3 +42,10 @@ Recovery candidate:163 offline testsPASS on macOS12.88s; native Debian/Python3.1
 Actual isolated on-target CLI reset entrypointPASS: prior synthetic fixture day/artwork/catalog archived, two real wall-clock rollover invocations produce today's empty state idempotently while preserving prior PNG/portrait/catalog bytes. No host clock, production catalog or remote image changed in this test. This is not a hardened-systemd/reset-timer action pass.
 
 Final recovery checkpoint verification:164PASS13.65s on macOS/Python3.12.8 and164PASS19.06s on native Debian/Python3.11.2; Ruff/formatPASS. A saved validated portrait still reuses its bytes with generation disabled, no key and unknown new facts, while wholly unknown NEW artwork remains blocked before reservation/API. This preserves replay safety without weakening the no-generic-art guard. No paid request or dog portrait generated. Native activation root cause and partial-reference quality policy still need the pending user inputs.
+
+## Explicit model preparation and final recovery delivery
+
+- Integrated suite177PASS13.05s on macOS/Python3.12.8 and177PASS20.49s on native Debian/Python3.11.2; Ruff/formatPASS. Thirteen added offline tests exercise corrupted/truncated/oversized responses, HTTPS downgrade rejection before following, interrupted blocking reads with total deadline, exclusive install races, existing byte reuse, symlink/provenance preservation and allowance rejection.
+- Actual CT112 model preparation verified both existing model files (92,192,341bytes total) against shipped public manifests with an injected failing network opener: network requests0. No model weights, credentials or camera media entered delivery. App startup still never imports/downloads through this helper.
+- Independent read-only reviewer initially found a missing total deadline and concurrent-destination replacement risk. Both repaired; focused13testsPASS0.14s, final review found no unresolved defects in this scope. No worker production/Git changes.
+- Current native worker/timer remain absent after failed440db67 promotion; no repeat activation, security-policy change, paid call or source-quality relaxation. Authenticated app journal and partial-reference policy are still pending. The final revision-tied artifact/checksums are saved outside Git in .work/delivery-receipt.json after the source checkpoint.

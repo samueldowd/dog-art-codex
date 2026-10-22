@@ -17,10 +17,22 @@ systemd-analyze calendar '*-*-* 00:00:00 America/New_York'
 sudo -u dog-art /opt/dog-art/current/venv/bin/dog-art --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env doctor --mode live --redact
 ```
 
-The installed service must be tested as its dedicated user under its hardening, not merely as root. Live mode needs measured visibility/identity calibration, accepted references and bounded paid/API/SMB/dashboard gates. Change the service's mode through an app-scoped systemd override only after those pass; keep source, config, models and deployed revision in the receipt. Do not edit HA/Frigate broadly to hide a missing gate.
+The installed service must be tested as its dedicated user under its hardening, not merely as root. Live mode needs reviewed source visibility, usable observed appearance facts and bounded paid/API/SMB/dashboard gates. The selected per_observation mode permits duplicate physical dogs without recognition calibration; calibrated_auto additionally requires the real identity evaluation. Change the service's mode through an app-scoped systemd override only after those pass; keep source, config, models and deployed revision in the receipt. Do not edit HA/Frigate broadly to hide a missing gate.
 
 Storage expansion is verified:40206MiB total/32894MiB available; runtime disk floor2048MiB remains unchanged. The user's later removal of a size floor applies to dog crop dimensions, not disk space.
 
 Provisioning is separate from the release: `sudo sh scripts/provision-ct112.sh /home/chatgpt/dog-art-build` verifies exact local model hashes, preserves existing runtime secrets and creates protected model files. The real dotenv travels directly over SSH to protected CT112 staging and never enters the release or Proxmox staging. Read both provisioning and installation scripts before authenticating.
 
 The installer verifies staged units before live mutation, explicitly restarts the worker on upgrade, checks its running release command/import, and restores previous pointer/units/service if promotion fails. Isolated command-boundary tests cover these cases; actual installed verification is still required.
+
+## Explicit model preparation
+
+The delivery includes public source/hash/preprocessing manifests in `deploy/models/` and `scripts/prepare-models.py`; weights are excluded. On CT112, unpack the verified delivery as the staging user, then run this preparation explicitly as `chatgpt`, before normal sudo provisioning:
+
+```sh
+python3 scripts/prepare-models.py --directory /home/chatgpt/dog-art-build/models --manifests deploy/models --max-mb 500
+```
+
+This downloads only the two pinned public weights (92,192,341 bytes total), verifies exact length/SHA256 over verified HTTPS, and enforces a 180-second total deadline per missing model plus the unchanged2048MiB free-space floor. Existing identical files are reused without a request; differing existing files/symlinks are preserved and rejected. Interrupted or invalid downloads remove only their own temporary file. These explicit model downloads do not occur at app startup. Prepare the separate protected `runtime.env` through the authorized secret channel; the helper never handles credentials or camera images. Then use the provisioning/installation steps above.
+
+The initial440db67 installation passed dedicated-user offline doctor but failed promotion and rolled back. No current pointer or service remains active. Preserve its release/stage for diagnosis; do not rerun its old activation script. Inspect the authenticated system journal before staging a replacement.
