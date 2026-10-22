@@ -733,3 +733,112 @@ def test_per_observation_manual_positive_review_qualifies_original_unchanged(tmp
     assert not obs.crops[0].full_body
     assert store.db.execute("SELECT payload FROM observations").fetchone()[0] == original
     store.close()
+
+
+def test_new_appearance_requires_stable_facts_even_after_complete_silhouette_review(tmp_path):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "unresolved-small-dog")
+    obs = replace(obs, crops=(replace(obs.crops[0], full_body=False),))
+    persist(store, obs)
+    store.audit(
+        "visibility_review",
+        {
+            "observation_id": obs.observation_id,
+            "full_body": True,
+            "reviewer": "offline-test",
+            "evidence": "synthetic-silhouette-only",
+        },
+        NOW.timestamp(),
+    )
+    facts = DogDescription(
+        visible_areas=("body",), uncertainty=("blurred appearance; stable facts unknown",)
+    )
+    engine = IdentityEngine(store, settings(IDENTITY_MODE="per_observation"), FrozenClock(NOW))
+    result = engine.process(obs, facts, (feature(),))
+    assert result.outcome == "uncertain" and result.dog_id is None
+    assert result.abstention_reason == "insufficient observed stable appearance evidence"
+    assert store.db.execute("SELECT count(*) FROM dogs").fetchone()[0] == 0
+    assert store.db.execute("SELECT count(*) FROM features").fetchone()[0] == 1
+    assert store.db.execute("SELECT count(*) FROM descriptions").fetchone()[0] == 1
+    assert store.db.execute("SELECT count(*) FROM jobs").fetchone()[0] == 0
+    store.close()
+
+
+@pytest.mark.parametrize(
+    "facts",
+    [
+        DogDescription(),
+        DogDescription(
+            pose="walking",
+            accessories="red collar",
+            visible_areas=("body",),
+            approximate_size="small",
+            breed="guessed breed",
+        ),
+        DogDescription(coat_colors=("unknown",), markings="not visible", fur="uncertain"),
+        DogDescription(markings="not clearly visible"),
+        DogDescription(markings="cannot be determined from this image"),
+        DogDescription(markings="unknown due to blur"),
+    ],
+)
+def test_transient_context_and_unknown_placeholders_are_not_stable_appearance(tmp_path, facts):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "unknown-appearance")
+    persist(store, obs)
+    engine = IdentityEngine(store, settings(IDENTITY_MODE="per_observation"), FrozenClock(NOW))
+    result = engine.process(obs, facts, (feature(),))
+    assert result.outcome == "uncertain"
+    assert result.abstention_reason == "insufficient observed stable appearance evidence"
+    store.close()
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("coat_colors", ("white",)),
+        ("markings", "black patch on left flank"),
+        ("proportions", "short legs and long torso"),
+        ("fur", "short straight coat"),
+        ("muzzle", "long narrow muzzle"),
+        ("ears", "upright triangular ears"),
+        ("tail", "curled tail"),
+    ],
+)
+def test_one_observed_stable_fact_satisfies_new_appearance_minimum(tmp_path, field, value):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "stable-" + field)
+    persist(store, obs)
+    engine = IdentityEngine(store, settings(IDENTITY_MODE="per_observation"), FrozenClock(NOW))
+    result = engine.process(obs, DogDescription(**{field: value}), (feature(),))
+    assert result.outcome == "new" and result.dog_id
+    assert not result.calibration_version and not result.candidates
+    store.close()
+
+
+def test_existing_unknown_appearance_entry_replay_is_preserved_without_new_entry(tmp_path):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "previously-reviewed-entry")
+    persist(store, obs)
+    # Represent an existing operator-accepted entry created before this guard.
+    store.db.execute(
+        "INSERT INTO dogs(dog_id,created_at) VALUES(?,?)", ("prior-appearance", NOW.timestamp())
+    )
+    store.db.execute(
+        "UPDATE observations SET dog_id=?,state='accepted' WHERE observation_id=?",
+        ("prior-appearance", obs.observation_id),
+    )
+    engine = IdentityEngine(store, settings(IDENTITY_MODE="per_observation"), FrozenClock(NOW))
+    result = engine.process(obs, DogDescription(), (feature(),))
+    assert result.outcome == "known" and result.dog_id == "prior-appearance"
+    assert store.db.execute("SELECT count(*) FROM dogs").fetchone()[0] == 1
+    assert store.db.execute("SELECT count(*) FROM requests").fetchone()[0] == 0
+    store.close()
+
+
+@pytest.mark.parametrize(
+    "phrase", ["not clearly visible", "cannot be determined from this image", "unknown due to blur"]
+)
+def test_unknown_explanations_are_not_stable_appearance(phrase):
+    from dog_art.description import has_observed_appearance
+
+    assert not has_observed_appearance(DogDescription(markings=phrase))

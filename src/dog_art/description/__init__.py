@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import re
 from dataclasses import fields
 from pathlib import Path
 
@@ -39,6 +40,41 @@ PROMPT = (
 
 class DescriptionError(ValueError):
     """A bounded local model or input validation failure, with no raw payload."""
+
+
+def has_observed_appearance(description):
+    """At least one stable visual fact; unknown/transient text cannot justify art."""
+    unknown = {
+        "",
+        "unknown",
+        "uncertain",
+        "not visible",
+        "unseen",
+        "cannot determine",
+        "unavailable",
+        "none",
+        "n/a",
+    }
+    values = (
+        *description.coat_colors,
+        *(
+            getattr(description, name)
+            for name in ("markings", "proportions", "fur", "muzzle", "ears", "tail")
+        ),
+    )
+    uncertain = re.compile(
+        r"\b(unknown|uncertain|unseen|unavailable|undetermined|indeterminate|"
+        r"indiscernible|unidentifiable|unrecognizable|obscured|occluded)\b"
+        r"|\bnot(?:\s+\w+){0,4}\s+(visible|seen|discernible|identifiable|observable|determined|clear|known)\b"
+        r"|\b(cannot|can't|could not|couldn't|unable to)\b.*\b(determin\w*|discern\w*|see|tell|identif\w*|assess\w*|confirm\w*|resolve\w*|distinguish\w*)\b"
+        r"|\b(too|very|highly)\s+(blurred|blurry|dark|pixelated)\b"
+    )
+    return any(
+        isinstance(v, str)
+        and v.strip().casefold() not in unknown
+        and not uncertain.search(v.casefold())
+        for v in values
+    )
 
 
 def parse_description(value) -> DogDescription:

@@ -10,7 +10,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def harness(tmp_path, *, upgrade=False, fail_verify=False, fail_restart=False):
+def harness(
+    tmp_path, *, upgrade=False, fail_verify=False, fail_restart=False, secrets_symlink=False
+):
     virtual = tmp_path / "host"
     app = virtual / "opt/dog-art"
     etc = virtual / "etc/dog-art"
@@ -29,7 +31,12 @@ def harness(tmp_path, *, upgrade=False, fail_verify=False, fail_restart=False):
         tools,
     ):
         d.mkdir(parents=True, exist_ok=True)
-    (etc / ".env").write_text("")
+    if secrets_symlink:
+        sentinel = tmp_path / "unrelated-secret"
+        sentinel.write_text("private sentinel")
+        (etc / ".env").symlink_to(sentinel)
+    else:
+        (etc / ".env").write_text("")
     (delivery / "SHA256SUMS").write_text("test harness boundary")
     (delivery / "SOURCE_REVISION").write_text("a" * 40 + "\n")
     (delivery / "requirements.lock").write_text("")
@@ -69,7 +76,7 @@ with log.open('a') as f:f.write(name+' '+' '.join(a)+'\\n')
 if name=='id':print('0')
 elif name=='hostname':print('CT112')
 elif name=='df':print('Filesystem M Used Available Capacity Mount\\nfake 40000 4000 36000 10% /')
-elif name in ('getent','sha256sum','chown','chmod','chgrp'):pass
+elif name in ('getent','sha256sum','chown','chmod','chgrp','journalctl'):pass
 elif name=='install':
  args=[];i=0
  while i<len(a):
@@ -95,6 +102,16 @@ elif name=='systemd-analyze':
    executable=text.split('ExecStart=')[1].split()[0]
    assert pathlib.Path(executable).is_file(),executable
 elif name=='systemctl':
+ if a[0] in ('enable','disable'):
+  for unit in a[1:]:
+   wants=v/'etc/systemd/system'/('timers.target.wants' if unit.endswith('.timer') else 'multi-user.target.wants')
+   link=wants/unit
+   if a[0]=='enable':
+    wants.mkdir(parents=True,exist_ok=True)
+    if not link.is_symlink():link.symlink_to(v/'etc/systemd/system'/unit)
+   else:
+    if not (v/'etc/systemd/system'/unit).is_file():sys.exit(1)
+    link.unlink(missing_ok=True)
  if a[0]=='is-enabled':print('enabled' if os.environ['UPGRADE']=='1' else 'disabled');sys.exit(0 if os.environ['UPGRADE']=='1' else 1)
  if a[0]=='is-active':
   if '--quiet' not in a:print('active' if os.environ['UPGRADE']=='1' else 'inactive')
@@ -113,6 +130,7 @@ else:raise AssertionError(name)
         "id",
         "hostname",
         "df",
+        "journalctl",
         "getent",
         "sha256sum",
         "chown",
@@ -171,3 +189,70 @@ def test_failed_upgrade_restores_previous_pointer_units_and_services(tmp_path):
     assert (app / "current").resolve().name == "previous"
     assert (units / "dog-art.service").read_text() == "previous dog-art.service"
     assert "systemctl start dog-art.service" in log
+
+
+def test_failed_first_promotion_removes_enabled_links_before_unit_removal(tmp_path):
+    r, app, units, log = harness(tmp_path, fail_restart=True)
+    assert r.returncode != 0
+    assert not (app / "current").is_symlink()
+    for path in (
+        units / "multi-user.target.wants/dog-art.service",
+        units / "timers.target.wants/dog-art-reset.timer",
+    ):
+        assert not path.is_symlink()
+    assert not (units / "dog-art.service").exists()
+
+
+def test_installer_rejects_secrets_symlink_before_metadata_changes(tmp_path):
+    r, app, units, log = harness(tmp_path, secrets_symlink=True)
+    assert r.returncode != 0 and "Secrets symlink forbidden" in r.stdout
+    assert not (app / "current").is_symlink()
+    assert (tmp_path / "unrelated-secret").read_text() == "private sentinel"
+    assert "chown root:dog-art" not in log
+
+
+@pytest.mark.parametrize("symlink_target", ["models", ".env"])
+def test_provisioning_rejects_directory_and_secrets_symlinks(tmp_path, symlink_target):
+    virtual = tmp_path / "host"
+    etc = virtual / "etc/dog-art"
+    state = virtual / "var/lib/dog-art"
+    staging = tmp_path / "staging"
+    tools = tmp_path / "bin"
+    for p in (etc, state, staging, tools):
+        p.mkdir(parents=True, exist_ok=True)
+    unrelated = tmp_path / "unrelated"
+    unrelated.mkdir()
+    (unrelated / "sentinel").write_text("preserve")
+    if symlink_target == "models":
+        (state / "models").symlink_to(unrelated)
+    else:
+        (etc / ".env").symlink_to(unrelated / "sentinel")
+    for name, body in [("id", "echo 0"), ("hostname", "echo CT112")]:
+        p = tools / name
+        p.write_text("#!/bin/sh\n" + body + "\n")
+        p.chmod(0o755)
+    p = tools / "realpath"
+    p.write_text(
+        "#!"
+        + sys.executable
+        + "\nimport pathlib,sys\nprint(pathlib.Path(sys.argv[-1]).resolve(strict=True))\n"
+    )
+    p.chmod(0o755)
+    script = (
+        (ROOT / "scripts/provision-ct112.sh")
+        .read_text()
+        .replace("/etc/dog-art", str(etc))
+        .replace("/var/lib/dog-art", str(state))
+    )
+    path = tmp_path / "provision.sh"
+    path.write_text(script)
+    result = subprocess.run(
+        ["/bin/sh", str(path), str(staging)],
+        env={**os.environ, "PATH": str(tools) + ":" + os.environ["PATH"]},
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode != 0 and "symlink forbidden" in result.stdout
+    assert (unrelated / "sentinel").read_text() == "preserve"
+    assert list(unrelated.iterdir()) == [unrelated / "sentinel"]

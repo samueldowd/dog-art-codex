@@ -77,7 +77,12 @@ def test_indeterminate_no_retry(tmp_path):
     service, store, fake = setup(tmp_path, True)
     for _ in range(2):
         with pytest.raises(PortraitError):
-            service.generate("dog1", DogDescription(), reserve_usd=1, build_scope="test-build")
+            service.generate(
+                "dog1",
+                DogDescription(coat_colors=("black",)),
+                reserve_usd=1,
+                build_scope="test-build",
+            )
     assert len(fake.calls) == 1 and store.status()["requests"] == {"indeterminate": 1}
     store.close()
 
@@ -99,7 +104,9 @@ def test_acceptance_and_dependency_wake_are_atomic_and_recoverable(tmp_path, mon
     import json
 
     service, store, fake = setup(tmp_path)
-    service.generate("dog1", DogDescription(), reserve_usd=1, build_scope="test-build")
+    service.generate(
+        "dog1", DogDescription(coat_colors=("black",)), reserve_usd=1, build_scope="test-build"
+    )
     key = store.db.execute("SELECT recipe_key FROM portraits").fetchone()[0]
     store.db.execute("INSERT INTO days VALUES('2026-10-20','old',1,0)")
     store.db.execute("INSERT INTO membership VALUES('2026-10-20','dog1',0,1)")
@@ -126,3 +133,40 @@ def test_acceptance_and_dependency_wake_are_atomic_and_recoverable(tmp_path, mon
     assert store.db.execute("SELECT count(*) FROM jobs WHERE kind='collage'").fetchone()[0] == 1
     assert len(fake.calls) == 1
     store.close()
+
+
+@pytest.mark.parametrize("coat_colors", [(), ("unknown",)])
+def test_wholly_unknown_appearance_never_reserves_or_calls_api(tmp_path, coat_colors):
+    service, store, fake = setup(tmp_path)
+    with pytest.raises(PortraitError, match="no observed appearance facts"):
+        service.generate(
+            "dog1",
+            DogDescription(
+                coat_colors=coat_colors,
+                visible_areas=("blurred body",),
+                uncertainty=("image blurred",),
+            ),
+            reserve_usd=1,
+            build_scope="test-build",
+        )
+    assert fake.calls == [] and store.db.execute("SELECT count(*) FROM requests").fetchone()[0] == 0
+    store.close()
+
+
+@pytest.mark.parametrize(
+    "phrase", ["not clearly visible", "cannot be determined from this image", "unknown due to blur"]
+)
+def test_unknown_explanations_never_justify_paid_art(tmp_path, phrase):
+    service, store, fake = setup(tmp_path)
+    with pytest.raises(PortraitError, match="no observed appearance facts"):
+        service.generate(
+            "dog1", DogDescription(markings=phrase), reserve_usd=1, build_scope="test-build"
+        )
+    assert fake.calls == [] and store.db.execute("SELECT count(*) FROM requests").fetchone()[0] == 0
+    store.close()
+
+
+def test_observed_negative_marking_is_a_fact():
+    from dog_art.description import has_observed_appearance
+
+    assert has_observed_appearance(DogDescription(markings="no white patches"))

@@ -11,6 +11,7 @@ from PIL import Image
 
 from ..budget import Ledger
 from ..contracts import DogDescription, PortraitRecipe
+from ..description import has_observed_appearance, parse_description
 from ..safety import disk_guard, fingerprint, owned_path, sha256
 
 STYLE_VERSION = "pencil-watercolor-v1"
@@ -116,6 +117,11 @@ class PortraitService:
 
     def _generate(self, dog_id, description, *, reserve_usd, build_scope=None):
         settings = self.settings
+        description = parse_description(json.dumps(asdict(description)))
+        if not has_observed_appearance(description):
+            raise PortraitError(
+                "no observed appearance facts; retain for review instead of generic artwork"
+            )
         missing = settings.missing("portrait")
         if missing:
             raise PortraitError("portrait stage not enabled/ready: " + ",".join(missing))

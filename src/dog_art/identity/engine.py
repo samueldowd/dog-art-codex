@@ -6,7 +6,7 @@ import uuid
 from dataclasses import asdict
 
 from dog_art.contracts import DogDescription, IdentityDecision, ImageFeature
-from dog_art.description import parse_description, validate_observation
+from dog_art.description import has_observed_appearance, parse_description, validate_observation
 
 from .matching import Calibration, decide, space
 
@@ -168,11 +168,14 @@ class IdentityEngine:
                     not in {"pose", "accessories"}
                     for item in description.uncertainty
                 )
+                observed_appearance = has_observed_appearance(description)
                 reason = (
                     "invalid or unusable observation quality"
                     if not valid_quality
                     else "conflicting appearance evidence"
                     if stable_conflict
+                    else "insufficient observed stable appearance evidence"
+                    if not observed_appearance
                     else None
                 )
                 decision = IdentityDecision(

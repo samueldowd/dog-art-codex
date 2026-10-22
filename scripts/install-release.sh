@@ -30,6 +30,7 @@ chgrp -R dog-art "$release"
 chmod -R g+rX,o-rwx "$release"
 if [ ! -e /etc/dog-art/app.toml ]; then install -o root -g dog-art -m 0640 "$delivery/config/app.toml.example" /etc/dog-art/app.toml; fi
 [ -f /etc/dog-art/.env ] || { echo 'Provision protected /etc/dog-art/.env before promotion; release installed but not activated'; exit 1; }
+[ ! -L /etc/dog-art/.env ] || { echo 'Secrets symlink forbidden'; exit 1; }
 chown root:dog-art /etc/dog-art/.env
 chmod 0640 /etc/dog-art/.env
 runuser -u dog-art -- "$release/venv/bin/dog-art" --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env doctor --mode offline --redact
@@ -57,7 +58,12 @@ rollback() {
  trap - EXIT HUP INT TERM
  if [ "$promoting" -eq 1 ] && [ "$result" -ne 0 ]; then
   echo 'Promotion failed; restoring previous application pointer and units.' >&2
+  systemctl status dog-art.service dog-art-reset.timer --no-pager --lines=5 >&2 || true
+  journalctl -u dog-art.service -u dog-art-reset.timer -n 30 --no-pager -o cat >&2 || true
   systemctl stop dog-art.service dog-art-reset.timer || true
+  # Disable newly enabled links while their unit files still exist.
+  [ "$worker_enabled" = enabled ] || systemctl disable dog-art.service >/dev/null 2>&1 || true
+  [ "$timer_enabled" = enabled ] || systemctl disable dog-art-reset.timer >/dev/null 2>&1 || true
   if [ -n "$previous" ]; then
    ln -s "$previous" /opt/dog-art/.rollback
    mv -Tf /opt/dog-art/.rollback /opt/dog-art/current
@@ -72,8 +78,6 @@ rollback() {
    fi
   done
   systemctl daemon-reload || true
-  [ "$worker_enabled" = enabled ] || systemctl disable dog-art.service >/dev/null 2>&1 || true
-  [ "$timer_enabled" = enabled ] || systemctl disable dog-art-reset.timer >/dev/null 2>&1 || true
   if [ "$worker_active" = active ]; then systemctl start dog-art.service || echo 'Previous worker recovery failed; inspect service' >&2; fi
   if [ "$timer_active" = active ]; then systemctl start dog-art-reset.timer || echo 'Previous timer recovery failed; inspect timer' >&2; fi
  fi
