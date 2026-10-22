@@ -3,6 +3,7 @@
 # Usage: sudo sh install-release.sh VERIFIED_UNPACKED_DELIVERY SOURCE_REVISION
 # Provision /etc/dog-art/.env separately through a protected CT112 input channel.
 set -eu
+umask 027
 [ "$(id -u)" -eq 0 ] || { echo 'Interactive sudo required'; exit 1; }
 [ "$(hostname)" = CT112 ] || { echo 'Wrong target hostname'; exit 1; }
 [ "$#" -eq 2 ] || { echo 'Usage: install-release.sh DELIVERY_DIR SOURCE_REVISION'; exit 1; }
@@ -25,6 +26,8 @@ set -- "$delivery"/wheel/*.whl
 [ "$#" -eq 1 ] || { echo 'Exactly one runtime wheel required'; exit 1; }
 "$release/venv/bin/python" -m pip install --no-cache-dir --no-deps "$1"
 "$release/venv/bin/python" -m compileall -q "$release/venv/lib"
+chgrp -R dog-art "$release"
+chmod -R g+rX,o-rwx "$release"
 if [ ! -e /etc/dog-art/app.toml ]; then install -o root -g dog-art -m 0640 "$delivery/config/app.toml.example" /etc/dog-art/app.toml; fi
 [ -f /etc/dog-art/.env ] || { echo 'Provision protected /etc/dog-art/.env before promotion; release installed but not activated'; exit 1; }
 chown root:dog-art /etc/dog-art/.env

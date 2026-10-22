@@ -69,7 +69,7 @@ with log.open('a') as f:f.write(name+' '+' '.join(a)+'\\n')
 if name=='id':print('0')
 elif name=='hostname':print('CT112')
 elif name=='df':print('Filesystem M Used Available Capacity Mount\\nfake 40000 4000 36000 10% /')
-elif name in ('getent','sha256sum','chown','chmod'):pass
+elif name in ('getent','sha256sum','chown','chmod','chgrp'):pass
 elif name=='install':
  args=[];i=0
  while i<len(a):
@@ -116,6 +116,7 @@ else:raise AssertionError(name)
         "getent",
         "sha256sum",
         "chown",
+        "chgrp",
         "chmod",
         "install",
         "python3",
