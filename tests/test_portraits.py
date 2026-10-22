@@ -170,3 +170,25 @@ def test_observed_negative_marking_is_a_fact():
     from dog_art.description import has_observed_appearance
 
     assert has_observed_appearance(DogDescription(markings="no white patches"))
+
+
+def test_saved_portrait_replay_needs_no_new_facts_key_or_generation_permission(tmp_path):
+    from dataclasses import replace
+
+    service, store, fake = setup(tmp_path)
+    service.generate(
+        "dog1", DogDescription(coat_colors=("black",)), reserve_usd=1, build_scope="test-build"
+    )
+    key = store.db.execute("SELECT recipe_key FROM portraits").fetchone()[0]
+    service.accept(key, reviewer="test", evidence="fixture alpha/visual review")
+    service.settings = replace(
+        service.settings,
+        values={**service.settings.values, "OPENAI_GENERATION_ENABLED": False},
+        secrets={},
+    )
+    result = service.generate("dog1", DogDescription(), reserve_usd=1, build_scope="test-build")
+    assert (
+        result["new_request"] is False and result["state"] == "validated" and len(fake.calls) == 1
+    )
+    assert store.db.execute("SELECT count(*) FROM requests").fetchone()[0] == 1
+    store.close()

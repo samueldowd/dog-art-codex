@@ -117,25 +117,12 @@ class PortraitService:
 
     def _generate(self, dog_id, description, *, reserve_usd, build_scope=None):
         settings = self.settings
-        description = parse_description(json.dumps(asdict(description)))
-        if not has_observed_appearance(description):
-            raise PortraitError(
-                "no observed appearance facts; retain for review instead of generic artwork"
-            )
-        missing = settings.missing("portrait")
-        if missing:
-            raise PortraitError("portrait stage not enabled/ready: " + ",".join(missing))
-        if settings.get("OPENAI_REFERENCE_MODE") != "artwork_only" or settings.get(
-            "ALLOW_CAMERA_CROP_UPLOAD"
-        ):
-            raise PortraitError("unapproved camera upload policy")
         canonical = self.store.canonical(dog_id)
         accepted = self.store.db.execute(
             "SELECT state FROM dogs WHERE dog_id=?", (canonical,)
         ).fetchone()
         if accepted is None or accepted[0] != "accepted":
             raise PortraitError("accepted identity required")
-        recipe = make_recipe(canonical, description, settings)
         recipe_key = canonical + ":" + STYLE_VERSION
         existing = self.store.db.execute(
             "SELECT * FROM portraits WHERE recipe_key=?", (recipe_key,)
@@ -155,6 +142,19 @@ class PortraitService:
             raise PortraitError(
                 "existing request requires reconciliation/review; no automatic resubmission"
             )
+        description = parse_description(json.dumps(asdict(description)))
+        if not has_observed_appearance(description):
+            raise PortraitError(
+                "no observed appearance facts; retain for review instead of generic artwork"
+            )
+        missing = settings.missing("portrait")
+        if missing:
+            raise PortraitError("portrait stage not enabled/ready: " + ",".join(missing))
+        if settings.get("OPENAI_REFERENCE_MODE") != "artwork_only" or settings.get(
+            "ALLOW_CAMERA_CROP_UPLOAD"
+        ):
+            raise PortraitError("unapproved camera upload policy")
+        recipe = make_recipe(canonical, description, settings)
         root = Path(settings["APP_DATA_ROOT"])
         root.mkdir(mode=0o700, parents=True, exist_ok=True)
         disk_guard(root, settings["MIN_FREE_DISK_MB"])
