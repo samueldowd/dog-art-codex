@@ -4,7 +4,7 @@ Statuses refer to the full stated item. PASS entries below identify their actual
 
 | ID | Behavior / scenario | Status | Evidence |
 |---|---|---|---|
-| R01 | Runs directly as Python on Debian CT112, with no Docker runtime dependency. | PASS | Actual native eedac73 dedicated-user service active; final recovery-source upgrade pending |
+| R01 | Runs directly as Python on Debian CT112, with no Docker runtime dependency. | PASS | Actual native34ac27e dedicated-user shadow service active; exact installed acceptance resumption pending |
 | R02 | Uses direct CT112 SSH when available; otherwise reaches the same running CT112 through `proxmox-host` and `pct exec 112`. | PASS | V01; actual route direct ct112, numeric110 |
 | R03 | Selects Backyard East and Driveway PTZ using verified machine camera IDs. | IN PROGRESS | V03; events now observed from both selected IDs |
 | R04 | Accepts dog events only, deduplicates repeated notifications, and handles completed-event media availability. | PASS | V02,V03; tests/test_ingest_pipeline.py |
@@ -22,7 +22,7 @@ Statuses refer to the full stated item. PASS entries below identify their actual
 | R16 | Shows each accepted distinct dog seen today exactly once, including previously cataloged dogs returning today. | IN PROGRESS | V02,V15; local daily membership tested; live accepted identities absent |
 | R17 | Creates an opaque cream `1920x1080` collage with scattered placement, preserved proportions and complete silhouettes. | PASS | Actual one-dog cream1920x1080 collage, complete silhouette and remote readback; other counts tested offline |
 | R18 | Saves reproducible layout metadata and portrait content hashes for each collage revision. | PASS | V02,V15; tests/test_composition.py reproducibility |
-| R19 | Publishes the current image through Samba into the verified equivalent of `media/kitchen-tv`. | PASS | V06 plus controlled ownedPNG actual boundedSMB/readback/decode/hash; valid current empty day |
+| R19 | Publishes the current image through Samba into the verified equivalent of `media/kitchen-tv`. | PASS | V06 plus actual owned dog/blank PNG publication/readback; post-Samba-restart signed/encrypted exactb563 hash read02:18:23UTC; ongoing service publication pending |
 | R20 | Shows the updated image in the actual existing Home Assistant dashboard slideshow. | PASS | Approved real refreshing picture card: dog -> blank -> dog without intervening page reload; evidence/LIVE_PORTRAIT_AND_DISPLAY.md |
 | R21 | Resets the owned display to an empty cream image at local midnight in America/New_York. | IN PROGRESS | Offline/DST/races and isolated native realCLI rolloverPASS; installedtimer/action/fullblankrestore pending |
 | R22 | Prevents old-day jobs, retries and publisher races from restoring yesterday's collage after reset. | IN PROGRESS | V02; stale-generation/rollover/deadline tests; live exercise pending |

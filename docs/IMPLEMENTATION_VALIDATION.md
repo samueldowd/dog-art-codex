@@ -1,5 +1,13 @@
 # Actual implementation validation
 
+## Current installed checkpoint — 2026-10-22 22:18 America/New_York
+
+Release34ac27e installed successfully through normal authenticated sudo. Worker is active shadow, NRestarts0, cwd/var/lib/dog-art; persistent timer next fires04:00UTC. Generation/publication remainfalse. The new hardened helper failed during SMB connection before capturing or modifying the image, so its later reset/restart/live-promotion gates were not reached. This does not repeat the earlier pending-portrait reset failure.
+
+Read-only diagnosis found TCP445 ConnectionRefusedError(errno111) fromCT112. HA reported core_samba started, but app logs ended with smbd/nmbd shutdown22:10:37. User explicitly authorized one Samba-app restart; the supported lifecycle API completed successfully, logs show smbd4.23.8 started22:17:30. CT112 then passed TCP/session/signed-encrypted owned-file read. Exact existing collage b563c587bb7ca69ce9e125b3eb3d6f9b3249d236cce2a6b8d7985990103a8a2a,940475bytes,RGB1920x1080 verified02:18:23UTC. No HA core restart, Samba configuration change, new paid request or DogArt publication occurred. The cause of Samba's prior stop remains unproven.
+
+Resume the exact installed release using [the guarded recovery script](../scripts/resume-live-34ac27e.sh), after independent review and normal sudo authentication. It verifies archive/wheel/source/helper/unit bytes, preserves failed stages, uses a fresh isolated acceptance directory and skips installation/downloads. Actual repaired production reset, reviewed-portrait acceptance, two real restarts and ongoing120-second window remain required. NativePTZ gate is preservedblocked and physical-return matching deferred by user.
+
 2026-10-22: **IN PROGRESS; required live acceptance remains blocked.** No offline/mock result is a production identity, paid-artwork or dashboard pass. Source/tested/artifact/installed revisions are recorded separately in the delivery receipt.
 
 | Evidence | Environment / actual result | Scope and limit |
