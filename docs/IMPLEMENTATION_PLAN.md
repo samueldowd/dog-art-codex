@@ -1,5 +1,17 @@
 # Living implementation plan
 
+## Installed checkpoint — 2026-10-23
+
+Runtime/source/artifact revision **ade9b918e04ca4341081bce6f90fe7935df1b9d3** is installed live. Normal authenticated upgrade passed the hardened zero-paid operational fixture, actual reset, two shadow restarts and 120-second live observation. Generation/publication remain enabled under $5/day and 12-call/day limits. The explicit approved_only policy retains pending appearances and publishes approved artwork as ready.
+
+The protected report at **05:09:50 UTC (01:09:50 New York)** recorded today's accepted/approved/pending counts as 0/0/0; permanent appearances8, validated portraits5, QA holds3. One ongoing request reserved $0.50 after midnight; this is not a provider bill. No new controlled paid test occurred. Yesterday's appearances are retained, never injected into today's membership.
+
+Independent public SSH at **15:16 UTC** confirmed exact installed ade9b91 argv, active dog-art user, WorkingDirectory=/var/lib/dog-art, NRestarts=0, reset Result=success/exit0, timer active. Its actual last trigger was October23 04:00 UTC (natural New York midnight, previous34ac release); next trigger October24 04:00 UTC. Signed/encrypted owned-file readback was RGB1920x1080, 8597bytes, SHA256 6600c7a52f34193bdecba563976dffd2ff4f35ed67f083794d8d74868a209d53. Fresh foreground dashboard loading displayed that cream image. The upgrade happened after midnight; a five-approved/three-pending production image was **not observed**, and no historical sighting was retimestamped to fabricate it.
+
+Remaining source acceptance: native PTZ lens mismatch remains blocked by the user's preserved recording view; real adverse-condition/multi-dog reference evaluation remains incomplete. Physical returning-dog matching and deduplication are explicitly deferred. These prevent an overall original-specification completion claim. Recovery and tests below remain valid within their stated scope.
+
+## Historical checkpoints (superseded where dated above)
+
 ## Current installed checkpoint — 2026-10-22 22:29 America/New_York
 
 Release34ac27e resumption completed through normal authenticated sudo. Actual hardened helper/dated blank-restore/old-day rejection/five-file retention/refused-dependency recovery passed; no controlled paid call. Actual production reset Resultsuccess/exit0, two shadow restarts and120-secondlive window passed. Independent public systemd check confirms dog-art user, safe cwd, active worker, NRestarts0, active midnight timer next04:00UTC. Generation/publication are nowtrue under existing limits. Earlier pre-helper Samba failure is preserved below for diagnosis.
@@ -18,12 +30,12 @@ Activated 2026-10-22 by the user. Read CODEX_BUILD_BRIEF.md, mandatory docs01–
 | B | Implemented and offline tested | Foundation checkpoint eee09c6; strict config separation, schema1/backup, queue/leases, budgets, clocks/paths. |
 | C | Implemented; real reference-quality gates blocked | Real clean snapshots/native frames fetched. Driveway PTZ record/detect lenses differ; user preserves wide recording. Backyard native detector association failed. User removed crop-size cutoff; rerun local processing. |
 | D | Implemented; real 8b description/encoder compatible; calibration blocked | Human selected qwen3-vl:8b; exact digest pinned, live real-crop structured response19.55s; DINO384 dimensions0.40s. User deferred returning-dog duplicate prevention; per_observation mode added. Full-body quality review still required. |
-| E | Actual saved portrait and human visual review passed | One official-SDK request; partial-reference anatomy/style/observed-fact QA passed. Saved-output automation/recovery final verification in progress. |
-| F | Actual collage/SMB/display exercised | Reviewed dog and controlled cream replacement rendered on the actual approved refreshing card. Final restore/installed reset action verification pending. |
-| G | Integrated review fixes and packaging in progress | Internal independent reviewer found concrete defects; repaired with regressions. Final integrated/source/native/wheel checks next. |
-| H | d96ea9e installed and shadow service/timer active; reset repair pending | One paid portrait saved; actual display passed. Current reviewed recovery/refresh source needs versioned upgrade through normal sudo. |
-| I | Offline recovery scenarios pass; real service/reset/publish checks pending | Do not label a timer syntax check as an installed timer/action pass. |
-| J | Documentation/checklist/reproducible delivery in progress | Record tested source/artifact/installed revision separately. Overall completion blocked by required live quality gates. |
+| E | Live generation and saved-output QA exercised | One controlled request; ongoing generation produced five validated and three held portraits by05:09UTC. Partial-source uncertainty retained. |
+| F | Actual collage/SMB/display exercised | Controlled dog/cream/dog, installed reset and current-day cream verified. Natural nonempty approved-subset production display not yet observed. |
+| G | Integrated tests/review/package verified | 330 Python tests on both platforms,23 Node tests, independent receipt/isolation/frontend reviews; reproducible wheel/archive. |
+| H | ade9b91 installed live | Exact release verified; approved_only selected; required native PTZ gate intentionally blocked. |
+| I | Installed operational gates exercised | Hardened controlled fixture, actual reset, two restarts/live120s, natural midnight trigger and later current-day readback; not a full upstream outage or container reboot experiment. |
+| J | Delivery and resumable handoff reconciled | Runtime ade9b91 and final documentation revision recorded separately. Original mandatory source-quality gates remain open. |
 
 ## Ownership and delegation
 

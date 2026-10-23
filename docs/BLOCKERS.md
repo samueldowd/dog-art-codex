@@ -1,5 +1,23 @@
 # Blocker log
 
+Current state — October23: ade9b91 installed live. Historical recovery notes follow the current table; earlier paid0/shadow/upgrade-pending statements are superseded.
+
+| ID | State | Evidence | Recovery / resumption input |
+|---|---|---|---|
+| B001 | RESOLVED | Hostname CT112, numeric container110, strict SSH verified | Never target112. |
+| B002 | RESOLVED | Authenticated ade9b91 installation, hardened helper, reset, two restarts/live120s passed; public samePID/NRestarts0 later | Preserve password-protected sudo; do not rerun installation blindly. |
+| B003 | DEFERRED by user | Physical return matching/duplicate prevention deferred; per_observation replay remains idempotent | Later recognition work requires independent human visit/dog labels and held-out cross-camera evidence. |
+| B004 | PASS within observed scope | Real controlled dog/cream/dog refresh; installed October23 current cream loaded foreground | Natural nonempty approved-subset production display not observed after this post-midnight upgrade; needs a genuine current-day qualifying sighting and validated art. Never retimestamp old events. |
+| B005 | RESOLVED | Expanded disk;28902MiB free at final installation | Keep2048MiB guard; delete no retained catalogs/artwork. |
+| B006 | BLOCKED by preserved user decision | Driveway wide01_main recording differs from PTZ02_sub detection | No authorized safe source-only repair while recording view is preserved. Native PTZ gate needs aligned recording evidence or a later explicit scope decision. Clean PTZ snapshots remain supported. |
+| B007 | OPEN source-quality acceptance | Backyard native association failed; small partial crops retained; two descriptions exhausted; real adverse-condition/multi-dog evaluation incomplete | Need usable real source evidence; do not infer unseen markings, fabricate quality labels or loosen output QA. Partial-reference policy already authorized. |
+| B008 | RESOLVED implementation/deployment | approved_only installed;330tests/23Node; current empty-day revision published/read back | Pending appearances/QA holds stay retained. Five-ready/three-pending production output was not observed before midnight. |
+
+B006 resumption requires aligned real recording/detection evidence or a later explicit change to the native-source requirement. B007 needs usable real adverse-condition and multi-dog references with truthful review labels. No essential credential or additional spending authority is currently missing. Operational pipeline remains live within existing caps; overall original-specification completion remains blocked by B006/B007. All request counts and protected catalog aggregates are timestamped in validation; no live protected read is inferred from public service status.
+
+## Historical recovery log
+
+
 | ID | State | Gate / measured evidence | Recovery attempts and exact next input |
 |---|---|---|---|
 | B001 | RESOLVED | CT112 hostname versus numeric ID | User confirmed ID110; strict direct SSH hostname/root-volume verified. Never target112. |
