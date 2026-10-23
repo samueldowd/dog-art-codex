@@ -374,3 +374,32 @@ def test_persistent_local_review_outage_exhausts_finite_read_attempts(tmp_path):
     assert len(attempts) == pipe.settings["READ_RETRY_ATTEMPTS"]
     assert len(calls) == 1 and pipe.store.status()["requests"] == {"needs_review": 1}
     pipe.close()
+
+
+def test_real_rollover_cli_reports_pending_composition_without_failed_calendar_or_paid_retry(
+    tmp_path, monkeypatch, capsys
+):
+    import dog_art.runtime as runtime
+    from dog_art.cli import main
+    from dog_art.storage import Store
+
+    pipe, _, calls, _, _ = seeded(tmp_path)
+    values = {**pipe.settings.values, "OPENAI_GENERATION_ENABLED": False, "PUBLISH_ENABLED": False}
+    database = pipe.store.path
+    pipe.close()
+    app = tmp_path / "reset-app.toml"
+    app.write_text("\n".join(k + " = " + json.dumps(v) for k, v in values.items()) + "\n")
+    secrets = tmp_path / "reset.env"
+    secrets.write_text("")
+    monkeypatch.setattr(runtime, "Clock", lambda: FrozenClock(NOW))
+    result = main(["--config", str(app), "--secrets-file", str(secrets), "rollover", "--publish"])
+    output = json.loads(capsys.readouterr().out)
+    assert result == 0 and output["composition_pending"] is True
+    assert output["day"]["dog_ids"] == ["dog"] and output["publication"] is None
+    store = Store(database)
+    try:
+        assert store.status()["requests"] == {"needs_review": 1}
+        assert store.db.execute("SELECT count(*) FROM membership").fetchone()[0] == 1
+    finally:
+        store.close()
+    assert len(calls) == 1

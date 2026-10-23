@@ -100,10 +100,9 @@ class PublicationGuard:
             raise StalePublication("publication guard is no longer held")
         m, r = self.manager, self.revision
         current = m._rollover_locked()
-        # Catch midnight while an upload was in progress; materialize the blank
-        # locally before rejecting stale replacement, without holding a DB txn.
+        # Rollover materializes a current-generation blank independently of
+        # today's portraits, including a sighting that beat the reset timer.
         if current.day != r.day:
-            m._render_locked(current.day)
             raise StalePublication("wall date changed; new-day output queued")
         with m.store.transaction() as db:
             current = m._normalize_locked(current.day, db)
@@ -111,18 +110,57 @@ class PublicationGuard:
                 "SELECT * FROM collages WHERE day=? AND revision=?", (r.day, r.revision)
             ).fetchone()
             outbox = db.execute(
-                "SELECT state FROM outbox WHERE day=? AND revision=?", (r.day, r.revision)
+                "SELECT * FROM outbox WHERE day=? AND revision=?", (r.day, r.revision)
             ).fetchone()
-            if (
-                current.generation != r.generation
-                or current.revision != r.revision
-                or current.dog_ids != r.dog_ids
-                or row is None
-                or row["sha256"] != r.sha256
-                or outbox is None
-                or outbox["state"] == "obsolete"
-            ):
-                raise StalePublication("generation/revision/membership is obsolete")
+            reset_waiting = (
+                db.execute(
+                    "SELECT 1 FROM outbox WHERE day=? AND generation=? AND revision=0 AND state='reset_pending'",
+                    (current.day, current.generation),
+                ).fetchone()
+                is not None
+            )
+            bound = (
+                current.generation == r.generation
+                and row is not None
+                and outbox is not None
+                and row["generation"] == r.generation
+                and outbox["generation"] == r.generation
+                and row["sha256"] == r.sha256
+                and outbox["sha256"] == r.sha256
+                and row["path"] == str(r.output_path)
+            )
+            reset = (
+                bound
+                and r.revision == 0
+                and r.dog_ids == ()
+                and r.portrait_hashes == ()
+                and outbox["state"] == "reset_pending"
+                and not m._has_verified_publication(current, db)
+                and json.loads(row["payload"])["dog_ids"] == []
+                and json.loads(row["payload"])["portrait_hashes"] == []
+            )
+            empty_retry = (
+                bound
+                and r.revision == 0
+                and r.dog_ids == ()
+                and r.portrait_hashes == ()
+                and outbox["state"] == "published"
+                and not m._has_verified_full_publication(current, db)
+                and json.loads(row["payload"])["dog_ids"] == []
+                and json.loads(row["payload"])["portrait_hashes"] == []
+            )
+            desired = (
+                bound
+                and not reset_waiting
+                and (r.revision != 0 or empty_retry)
+                and current.revision == r.revision
+                and current.dog_ids == r.dog_ids
+                and outbox["state"] in {"pending", "publishing", "published"}
+            )
+            if not (reset or desired):
+                raise StalePublication(
+                    "generation/revision/membership is obsolete or reset pending"
+                )
         if sha256(r.output_path) != r.sha256:
             raise StalePublication("local archived bytes changed")
         return r
@@ -232,7 +270,7 @@ class DailyManager:
                     (today,),
                 )
                 db.execute(
-                    "UPDATE outbox SET state='obsolete' WHERE state IN ('pending','publishing') AND day != ?",
+                    "UPDATE outbox SET state='obsolete' WHERE state IN ('pending','publishing','reset_pending') AND day != ?",
                     (today,),
                 )
                 self.store.audit(
@@ -246,13 +284,116 @@ class DailyManager:
                     db=db,
                 )
                 self._queue(self._state(today, db), db)
-            return self._normalize_locked(today, db)
+            state = self._normalize_locked(today, db)
+        self._ensure_reset_locked(state)
+        return state
+
+    @staticmethod
+    def _has_verified_publication(state, db):
+        # Current publishers commit receipt + published state atomically. The
+        # receipt query also covers legacy catalogs with missing outbox rows.
+        return (
+            db.execute(
+                "SELECT 1 FROM outbox WHERE day=? AND generation=? AND state='published' LIMIT 1",
+                (state.day, state.generation),
+            ).fetchone()
+            is not None
+            or db.execute(
+                "SELECT 1 FROM publications WHERE json_extract(payload,'$.generation')=? "
+                "AND json_extract(payload,'$.state')='verified' LIMIT 1",
+                (state.generation,),
+            ).fetchone()
+            is not None
+        )
+
+    @staticmethod
+    def _has_verified_full_publication(state, db):
+        return (
+            db.execute(
+                "SELECT 1 FROM outbox WHERE day=? AND generation=? AND revision>0 AND state='published' LIMIT 1",
+                (state.day, state.generation),
+            ).fetchone()
+            is not None
+            or db.execute(
+                "SELECT 1 FROM publications WHERE json_extract(payload,'$.generation')=? "
+                "AND json_extract(payload,'$.revision')>0 AND json_extract(payload,'$.state')='verified' LIMIT 1",
+                (state.generation,),
+            ).fetchone()
+            is not None
+        )
+
+    def _ensure_reset_locked(self, state):
+        """Keep blank zero publishable until this generation is first verified.
+
+        This blank is an independent reset snapshot. It neither clears nor
+        omits accepted membership in the desired composed revision. Archives are
+        immutable, and an already published generation is never blanked again.
+        """
+        with self.store.transaction() as db:
+            if self._has_verified_publication(state, db):
+                db.execute(
+                    "UPDATE outbox SET state='obsolete' WHERE day=? AND generation=? AND state='reset_pending'",
+                    (state.day, state.generation),
+                )
+                return
+            existing = db.execute(
+                "SELECT payload FROM collages WHERE day=? AND revision=0", (state.day,)
+            ).fetchone()
+        blank = DayState(state.day, state.generation, 0, ())
+        revision = self._archive_image(blank, {}, (), existing)
+        with self.store.transaction() as db:
+            db.execute(
+                "INSERT OR IGNORE INTO collages VALUES(?,?,?,?,?,?)",
+                (
+                    state.day,
+                    0,
+                    state.generation,
+                    json.dumps(revision_payload(revision), sort_keys=True),
+                    str(revision.output_path),
+                    revision.sha256,
+                ),
+            )
+            if state.day != self._today() or self._has_verified_publication(state, db):
+                return
+            db.execute(
+                "INSERT INTO outbox(day,revision,generation,sha256,state) VALUES(?,0,?,?,'reset_pending') "
+                "ON CONFLICT(day,revision) DO UPDATE SET state='reset_pending' "
+                "WHERE outbox.generation=excluded.generation AND outbox.sha256=excluded.sha256 "
+                "AND outbox.state NOT IN ('published','reset_pending')",
+                (state.day, state.generation, revision.sha256),
+            )
 
     def reconcile(self) -> DayState:
-        """Idempotent startup/midnight catch-up; archive and queue current output."""
+        """Reconcile the calendar/reset even while composition awaits portraits.
+
+        Returned state retains every accepted member. A missing desired collage
+        signals composition_pending to callers; build() still raises that wait.
+        """
         with application_lock(self.lock_path):
             state = self._rollover_locked()
-            self._render_locked(state.day)
+            try:
+                self._render_locked(state.day)
+            except PortraitPendingError:
+                with self.store.transaction() as db:
+                    changed = db.execute(
+                        "INSERT OR IGNORE INTO meta(key,value) VALUES(?,?)",
+                        (
+                            f"composition_pending:{state.generation}:{state.revision}",
+                            "PortraitPendingError",
+                        ),
+                    ).rowcount
+                    if changed:
+                        self.store.audit(
+                            "composition_pending",
+                            {
+                                "day": state.day,
+                                "generation": state.generation,
+                                "revision": state.revision,
+                                "error_code": "PortraitPendingError",
+                            },
+                            self.clock.now().timestamp(),
+                            db=db,
+                        )
             return state
 
     def state(self, day=None) -> DayState:
@@ -344,6 +485,39 @@ class DailyManager:
             existing = db.execute(
                 "SELECT payload FROM collages WHERE day=? AND revision=?", (day, state.revision)
             ).fetchone()
+        revision = self._archive_image(state, portraits, expected_hashes, existing)
+        output = revision.output_path
+        with self.store.transaction() as db:
+            # Identity corrections can occur independently of the publish lock.
+            latest = self._normalize_locked(day, db)
+            if latest != state:
+                raise StalePublication(
+                    "membership changed during local composition; rebuild desired revision"
+                )
+            db.execute(
+                "INSERT OR IGNORE INTO collages VALUES(?,?,?,?,?,?)",
+                (
+                    day,
+                    revision.revision,
+                    revision.generation,
+                    json.dumps(revision_payload(revision), sort_keys=True),
+                    str(output),
+                    revision.sha256,
+                ),
+            )
+            if day == self._today():
+                db.execute(
+                    "UPDATE outbox SET state='obsolete' WHERE state IN ('pending','publishing') AND (day != ? OR generation != ? OR revision != ?)",
+                    (day, state.generation, state.revision),
+                )
+                db.execute(
+                    "INSERT OR IGNORE INTO outbox(day,revision,generation,sha256) VALUES(?,?,?,?)",
+                    (day, state.revision, state.generation, revision.sha256),
+                )
+        return revision
+
+    def _archive_image(self, state, portraits, expected_hashes, existing):
+        """Create/recover immutable image bytes without changing membership."""
         output = owned_path(
             self.root,
             f"archives/{state.day}/{state.generation}-r{state.revision:08d}.png",
@@ -378,7 +552,7 @@ class DailyManager:
                 write_receipt(replace(recovered, output_path=output))
                 self.store.audit(
                     "archive_receipt_recovered",
-                    {"day": day, "revision": state.revision},
+                    {"day": state.day, "revision": state.revision},
                     utc(self.clock.now()).timestamp(),
                 )
             finally:
@@ -406,33 +580,6 @@ class DailyManager:
                 output_path=output,
                 created_at=self.clock.now(),
             )
-        with self.store.transaction() as db:
-            # Identity corrections can occur independently of the publish lock.
-            latest = self._normalize_locked(day, db)
-            if latest != state:
-                raise StalePublication(
-                    "membership changed during local composition; rebuild desired revision"
-                )
-            db.execute(
-                "INSERT OR IGNORE INTO collages VALUES(?,?,?,?,?,?)",
-                (
-                    day,
-                    revision.revision,
-                    revision.generation,
-                    json.dumps(revision_payload(revision), sort_keys=True),
-                    str(output),
-                    revision.sha256,
-                ),
-            )
-            if day == self._today():
-                db.execute(
-                    "UPDATE outbox SET state='obsolete' WHERE state IN ('pending','publishing') AND (day != ? OR generation != ? OR revision != ?)",
-                    (day, state.generation, state.revision),
-                )
-                db.execute(
-                    "INSERT OR IGNORE INTO outbox(day,revision,generation,sha256) VALUES(?,?,?,?)",
-                    (day, state.revision, state.generation, revision.sha256),
-                )
         return revision
 
     def build(self, day=None) -> CollageRevision:
@@ -500,12 +647,20 @@ class DailyManager:
                 return self._state(current.day, db)
 
     def latest(self) -> CollageRevision | None:
-        """Read the sole current desired pending/published revision, if rendered."""
+        """Return the unverified reset first, then the desired composed revision."""
         with application_lock(self.lock_path):
             state = self._rollover_locked()
             row = self.store.db.execute(
-                "SELECT path FROM collages WHERE day=? AND revision=?", (state.day, state.revision)
+                "SELECT c.path FROM collages c JOIN outbox o USING(day,revision) "
+                "WHERE c.day=? AND c.generation=? AND o.generation=? "
+                "AND c.revision=0 AND o.state='reset_pending'",
+                (state.day, state.generation, state.generation),
             ).fetchone()
+            if row is None:
+                row = self.store.db.execute(
+                    "SELECT path FROM collages WHERE day=? AND revision=?",
+                    (state.day, state.revision),
+                ).fetchone()
             return load_revision(Path(row[0])) if row else None
 
     @contextmanager

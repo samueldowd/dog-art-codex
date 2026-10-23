@@ -1,6 +1,6 @@
 # Operator guide
 
-Use `/opt/dog-art/current/venv/bin/dog-art --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env` as the command prefix after installation. Never pass passwords/API keys as arguments. These commands are implemented; production installation/live acceptance status is recorded separately in validation.
+On CT112, run from the application-owned `/var/lib/dog-art` directory as `dog-art` through normal sudo. Python SMB worker spawning cannot inherit an SSH user home that the dedicated account cannot traverse. Keep home permissions unchanged. Use `/opt/dog-art/current/venv/bin/dog-art --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env` as the command prefix after installation. Never pass passwords/API keys as arguments. These commands are implemented; production installation/live acceptance status is recorded separately in validation.
 
 ```text
 status --redact
@@ -43,3 +43,5 @@ Saved generated portraits can be reviewed automatically with `PORTRAIT_REVIEW_MO
 Startup recovers valid deterministic saved PNG or complete `.partial` bytes belonging to an existing successful request under the paid-request lock. It records `needs_review`, never approves or resubmits them. Missing, corrupt, mismatched or conflicting evidence receives an explicit `saved_portrait_*` manual hold. Preserve all such files and the ledger for diagnosis; do not clear them to obtain another paid attempt.
 
 The approved `custom:dog-art-picture` configuration and module are shipped under `deploy/home-assistant/`. Its fixed authenticated media URI is refreshed every 30 seconds while the dashboard is visible; hidden pages pause and resume when shown. It accepts only same-origin PNG bytes at the owned path, checks 1920x1080, and preserves the previous decoded image during outages. A module installation/update needs one browser reload; successive image replacements do not. No Home Assistant restart or entity/service change is required. Rollback replaces only this card with its saved prior picture-card configuration through a fresh guarded dashboard API patch; leave other dashboard cards unchanged.
+
+`rollover` reports `composition_pending=true` when accepted members are waiting for portraits. That is a retained dependency, not failed calendar reconciliation. A durable `reset_pending` empty revision has priority until its current-day/generation publication is verified, even if a sighting arrives before the midnight timer. Later full art waits for that reset receipt; an already published day is never blanked again by routine reconciliation. `build` still surfaces missing art. No accepted membership or retained archive is cleared to obtain a successful reset.

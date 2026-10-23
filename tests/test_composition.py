@@ -23,6 +23,7 @@ from dog_art.daily import (
     StalePublication,
     application_lock,
 )
+from dog_art.publishing import Publisher
 from dog_art.safety import sha256
 from dog_art.settings import Settings
 from dog_art.storage import Store
@@ -67,6 +68,43 @@ def setup_manager(tmp_path, now=NOW):
     clock = FrozenClock(now)
     manager = DailyManager(store, settings(root), clock)
     return store, clock, manager
+
+
+def verify_initial_reset(store, clock, manager):
+    """Complete real publisher/guard prerequisites before a later-art scenario."""
+
+    class MemorySMB:
+        def __init__(self):
+            self.files = {}
+
+        def read(self, path):
+            if path not in self.files:
+                raise FileNotFoundError(path)
+            return self.files[path]
+
+        def write_new(self, path, data):
+            assert path not in self.files
+            self.files[path] = data
+
+        def replace(self, source, target):
+            self.files[target] = self.files.pop(source)
+
+        def remove_owned_temp(self, path):
+            self.files.pop(path, None)
+
+    cfg = Settings(
+        {
+            **manager.settings.values,
+            "PUBLISH_ENABLED": True,
+            "SMB_HOST": "offline.test",
+            "SMB_SHARE": "media",
+            "SMB_SUBDIRECTORY": "kitchen-tv/dog-art",
+            "PUBLISH_FILENAME": "dog-collage.png",
+        },
+        {"SMB_USERNAME": "offline", "SMB_PASSWORD": "offline"},
+    )
+    receipt = Publisher(store, cfg, clock, manager, transport=MemorySMB()).publish(manager.latest())
+    assert receipt.state == "verified"
 
 
 def enroll(store, root, name="dog-a", *, ready=True, canonical=None, state="accepted"):
@@ -199,6 +237,7 @@ def test_missing_portrait_retains_membership_prior_archive_and_blocks_partial(tm
     enroll(store, manager.root, ready=False)
     manager.reconcile()
     blank = manager.latest()
+    verify_initial_reset(store, clock, manager)
     manager.record_sighting("dog-a", NOW)
     with pytest.raises(PortraitPendingError):
         manager.build()
@@ -248,9 +287,12 @@ def test_rollover_once_keeps_catalog_portrait_archives_and_latest_only(tmp_path)
         store.db.execute("SELECT count(*) FROM audit WHERE code='daily_rollover'").fetchone()[0]
         == 2
     )
-    assert [r[0] for r in store.db.execute("SELECT day FROM outbox WHERE state='pending'")] == [
-        new.day
-    ]
+    assert [
+        r[0]
+        for r in store.db.execute(
+            "SELECT day FROM outbox WHERE state IN ('pending','reset_pending')"
+        )
+    ] == [new.day]
     with pytest.raises(StalePublication):
         with manager.publication_guard(old):
             pytest.fail("old-day image cannot publish")
@@ -315,6 +357,7 @@ def test_midnight_during_upload_revalidation_rejects_and_queues_blank(tmp_path):
     store, clock, manager = setup_manager(tmp_path, datetime(2026, 10, 23, 3, 59, 59, tzinfo=UTC))
     enroll(store, manager.root)
     manager.reconcile()
+    verify_initial_reset(store, clock, manager)
     manager.record_sighting("dog-a", clock.now())
     old = manager.build()
     with manager.publication_guard(old) as guard:

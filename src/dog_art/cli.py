@@ -250,8 +250,14 @@ def main(argv=None):
             elif args.command == "retry":
                 result = {"resumed": pipe.retry_waiting()}
             elif args.command == "rollover":
+                day = pipe.daily.reconcile()
+                ready = pipe.store.db.execute(
+                    "SELECT 1 FROM collages WHERE day=? AND revision=?",
+                    (day.day, day.revision),
+                ).fetchone()
                 result = {
-                    "day": asdict(pipe.daily.reconcile()),
+                    "day": asdict(day),
+                    "composition_pending": ready is None,
                     "publication": pipe.publish_latest(),
                 }
             elif args.command == "review":

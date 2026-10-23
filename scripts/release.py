@@ -41,6 +41,7 @@ def create_release(wheel, output, revision):
         "provision-ct112.sh",
         "prepare-models.py",
         "verify-installed.py",
+        "activate-live.template.sh",
         "install-release.sh",
         "evaluate_identity.py",
         "export_identity.py",

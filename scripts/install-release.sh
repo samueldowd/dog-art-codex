@@ -19,6 +19,8 @@ release=/opt/dog-art/releases/0.1.0-$revision
 [ ! -e "$release" ] || { echo 'Release exists; inspect before reuse'; exit 1; }
 for p in /opt/dog-art /etc/dog-art /var/lib/dog-art; do [ ! -L "$p" ] || { echo 'Unexpected symlink'; exit 1; }; done
 getent passwd dog-art >/dev/null
+# Python spawn must inherit a directory traversable by the dedicated user.
+cd /var/lib/dog-art
 install -d -o root -g dog-art -m 0750 "$release"
 python3 -m venv "$release/venv"
 "$release/venv/bin/python" -m pip install --no-cache-dir --require-hashes -r "$delivery/requirements.lock"
