@@ -47,12 +47,12 @@
     "pending_today": 0,
     "permanent_appearances": 8,
     "validated_portraits": 5,
-    "qa_held": 3,
     "paid_calls_today": 1,
     "reserved_usd_today": 0.5,
     "indeterminate": 0,
     "last_publication_revision": 1,
-    "journal_errors_last_15_minutes": 0
+    "journal_errors_last_15_minutes": 0,
+    "needs_review_portraits": 3
   },
   "public_verification_20261023_151603Z": {
     "exact_installed_revision": "ade9b918e04ca4341081bce6f90fe7935df1b9d3",
@@ -116,5 +116,9 @@
     "secret_exclusion": "PASS",
     "runtime_archive_manifest_and_sha": "PASS",
     "runtime_rebuilt": false
+  },
+  "rollback_evidence": {
+    "actual_first_install": "failed promotion removed new current pointer/units, restoring prior absence",
+    "existing_prior_release": "isolated installer harness only; not a live prior-version rollback"
   }
 }
