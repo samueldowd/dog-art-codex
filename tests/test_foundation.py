@@ -163,3 +163,34 @@ def test_partial_reference_policy_is_explicit_and_only_per_observation(tmp_path)
         )
         == "full_body"
     )
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        'PORTRAIT_REVIEW_MODE = "approve_everything"',
+        "OPENAI_PORTRAIT_RESERVATION_USD = 0",
+        "OPENAI_PORTRAIT_RESERVATION_USD = 6",
+    ],
+)
+def test_output_review_and_reservation_configuration_fail_closed(tmp_path, replacement):
+    text = (ROOT / "config/app.toml").read_text()
+    key = replacement.split(" = ")[0]
+    import re
+
+    text = re.sub(r"^" + key + r" = .*$", replacement, text, flags=re.M)
+    app = tmp_path / "app.toml"
+    app.write_text(text)
+    with pytest.raises(ConfigError):
+        load_settings(app, tmp_path / ".env", environ={})
+
+
+@pytest.mark.parametrize("key", ["OPENAI_PORTRAIT_RESERVATION_USD", "OPENAI_DAILY_BUDGET_USD"])
+def test_unknown_spending_placeholder_allows_offline_load_but_blocks_portrait(tmp_path, key):
+    import re
+
+    text = (ROOT / "config/app.toml").read_text()
+    app = tmp_path / "app.toml"
+    app.write_text(re.sub(r"^" + key + r" = .*$", key + ' = ""', text, flags=re.M))
+    settings = load_settings(app, tmp_path / ".env", environ={})
+    assert key in settings.missing("portrait")

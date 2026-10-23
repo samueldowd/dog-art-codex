@@ -26,14 +26,21 @@ def create_release(wheel, output, revision):
         "config/app.toml": ROOT / "config/app.toml",
         "config/.env.example": ROOT / "config/.env.example",
     }
-    for folder in ("deploy/systemd", "deploy/models", "docs"):
+    for folder in (
+        "deploy/systemd",
+        "deploy/models",
+        "deploy/home-assistant",
+        "docs",
+        "docs/evidence",
+    ):
         for path in sorted((ROOT / folder).glob("*")):
-            if path.is_file() and path.suffix in (".md", ".service", ".timer", ".json"):
+            if path.is_file() and path.suffix in (".md", ".service", ".timer", ".json", ".js"):
                 selected[str(path.relative_to(ROOT))] = path
     for name in (
         "bootstrap-ct112.sh",
         "provision-ct112.sh",
         "prepare-models.py",
+        "verify-installed.py",
         "install-release.sh",
         "evaluate_identity.py",
         "export_identity.py",

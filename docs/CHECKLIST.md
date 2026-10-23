@@ -4,7 +4,7 @@ Statuses refer to the full stated item. PASS entries below identify their actual
 
 | ID | Behavior / scenario | Status | Evidence |
 |---|---|---|---|
-| R01 | Runs directly as Python on Debian CT112, with no Docker runtime dependency. | BLOCKED | Native wheel/dependencies and dedicated-user doctorPASS; actual service promotionFAIL/rollback; journal received, bounded process-verification recovery ready |
+| R01 | Runs directly as Python on Debian CT112, with no Docker runtime dependency. | PASS | Actual native eedac73 dedicated-user service active; final recovery-source upgrade pending |
 | R02 | Uses direct CT112 SSH when available; otherwise reaches the same running CT112 through `proxmox-host` and `pct exec 112`. | PASS | V01; actual route direct ct112, numeric110 |
 | R03 | Selects Backyard East and Driveway PTZ using verified machine camera IDs. | IN PROGRESS | V03; events now observed from both selected IDs |
 | R04 | Accepts dog events only, deduplicates repeated notifications, and handles completed-event media availability. | PASS | V02,V03; tests/test_ingest_pipeline.py |
@@ -15,15 +15,15 @@ Statuses refer to the full stated item. PASS entries below identify their actual
 | R09 | Maintains permanent identities and matches recognized returning dogs across visits/days and both cameras. | DEFERRED | User permits duplicates; SCOPE_CHANGES.md; calibrated returning-dog work retained for later |
 | R10 | Abstains on ambiguous lookalikes or inadequate evidence and supports reviewed corrections. | BLOCKED | V02,V13; corrections pass offline; real ambiguity labels missing |
 | R11 | Creates no duplicate identity/portrait when simultaneous events represent the same recognized dog. | DEFERRED | User permits repeated physical dogs across observations; replay idempotency still tested |
-| R12 | Uses the OpenAI API for a newly established dog's watercolor portrait and reuses it on returns. | IN PROGRESS | New real API portrait pending source quality; return-reuse portion deferred by user |
-| R13 | Matches the supplied pencil/watercolor style and produces a complete isolated dog with actual transparency. | BLOCKED | Usable partial references authorized and locally verified; no paid portrait/output quality pass yet |
+| R12 | Uses the OpenAI API for a newly established dog's watercolor portrait and reuses it on returns. | PASS (current scope) | One actual official-SDK portrait saved; return-reuse portion deferred by user; LIVE_PORTRAIT_AND_DISPLAY.md |
+| R13 | Matches the supplied pencil/watercolor style and produces a complete isolated dog with actual transparency. | PASS | Actual saved transparent portrait; primary+independent cream/dark anatomy/style/observed-facts visual QA; partial policy limitations explicit |
 | R14 | Applies configured cost/call/concurrency limits and handles ambiguous billed request outcomes conservatively. | PASS | V02,V14; tests/test_foundation.py,test_portraits.py |
 | R15 | Keeps full videos and recognition/description processing local; camera-crop upload is opt-in. | PASS | V02,V09,V14; cloud artwork-only assertions, opt-in currently refused |
 | R16 | Shows each accepted distinct dog seen today exactly once, including previously cataloged dogs returning today. | IN PROGRESS | V02,V15; local daily membership tested; live accepted identities absent |
-| R17 | Creates an opaque cream `1920x1080` collage with scattered placement, preserved proportions and complete silhouettes. | IN PROGRESS | V15; local exact render pass; live delivery pending |
+| R17 | Creates an opaque cream `1920x1080` collage with scattered placement, preserved proportions and complete silhouettes. | PASS | Actual one-dog cream1920x1080 collage, complete silhouette and remote readback; other counts tested offline |
 | R18 | Saves reproducible layout metadata and portrait content hashes for each collage revision. | PASS | V02,V15; tests/test_composition.py reproducibility |
 | R19 | Publishes the current image through Samba into the verified equivalent of `media/kitchen-tv`. | PASS | V06 plus controlled ownedPNG actual boundedSMB/readback/decode/hash; valid current empty day |
-| R20 | Shows the updated image in the actual existing Home Assistant dashboard slideshow. | IN PROGRESS | V10 actual configured picture card visibly renders ownedcreamPNG; dogart/successive update pending |
+| R20 | Shows the updated image in the actual existing Home Assistant dashboard slideshow. | PASS | Approved real refreshing picture card: dog -> blank -> dog without intervening page reload; evidence/LIVE_PORTRAIT_AND_DISPLAY.md |
 | R21 | Resets the owned display to an empty cream image at local midnight in America/New_York. | IN PROGRESS | Offline/DST/races and isolated native realCLI rolloverPASS; installedtimer/action/fullblankrestore pending |
 | R22 | Prevents old-day jobs, retries and publisher races from restoring yesterday's collage after reset. | IN PROGRESS | V02; stale-generation/rollover/deadline tests; live exercise pending |
 | R23 | Retains portrait assets, identity references and historical collages on CT112 across daily resets. | IN PROGRESS | V02; local persistence/immutable archive tests; installed-state reset pending |
@@ -54,7 +54,7 @@ Statuses refer to the full stated item. PASS entries below identify their actual
 | T14 | Default cloud request contains description/generated style art only. Crop opt-in isolates dog pixels and excludes handlers; full MP4 is never sent. | IN PROGRESS | V02; offline scenario covered; required live/package/operational part pending |
 | T15 | Dollar/call/attempt/concurrency bounds reject work before overspend; a key with missing budget cannot submit. | PASS | V02; offline scenario covered; required live/package/operational part pending |
 | T16 | Timeout after possible submission, worker crash, SDK automatic retries and interrupted result saving do not blindly duplicate paid requests. | PASS | V02; offline scenario covered; required live/package/operational part pending |
-| T17 | Portrait PNG decode, alpha exterior/fur edges, full-body anatomy, style and major markings pass automated plus actual visual review. | BLOCKED | Actual paidPNG/anatomy/style/observed-marking review not run; partial-source policy authorized |
+| T17 | Portrait PNG decode, alpha exterior/fur edges, full-body anatomy, style and major markings pass automated plus actual visual review. | PASS | Actual paid PNG/Pillow+primary+independent visual review, bounded local QA smoke; partial-source unknowns explicit |
 | T18 | Zero dogs yields exact opaque cream 1920x1080 output; one/five/many dogs appear once at preserved proportions. | PASS | V02; offline scenario covered; required live/package/operational part pending |
 | T19 | Fixed recipe/assets/seed/placements reproduce the saved layout; margins and collisions are checked. | PASS | V02; offline scenario covered; required live/package/operational part pending |
 | T20 | Too many dogs or poor readable fit never silently truncates the day set; capacity state is actionable and last valid output survives. | PASS | V02; offline scenario covered; required live/package/operational part pending |
@@ -65,8 +65,8 @@ Statuses refer to the full stated item. PASS entries below identify their actual
 | T25 | SMB interrupted upload/replace, occupied file, denied credentials and disconnect preserve the prior good image and defer safely. | PASS | V02; offline scenario covered; required live/package/operational part pending |
 | T26 | Remote readback has the desired bytes/hash/dimensions. A crash after replacement but before receipt does not replay stale output. | IN PROGRESS | V02; offline scenario covered; required live/package/operational part pending |
 | T27 | Unrelated slideshow sentinel files and original input files remain unchanged through publish/reset/retry/rollback. | IN PROGRESS | V02; offline scenario covered; required live/package/operational part pending |
-| T28 | The actual HA card displays successive revisions and the blank image through its normal slideshow/refresh behavior. | IN PROGRESS | V02; offline scenario covered; required live/package/operational part pending |
-| T29 | Real CT112 native service start/restart and reset-timer scheduling work as the dedicated service user. | BLOCKED | Installed shadow worker/timer promotion failed and rolled back; no active current units |
+| T28 | The actual HA card displays successive revisions and the blank image through its normal slideshow/refresh behavior. | PASS | Actual approved30secondcard displayed dog/blank/restored dog without page reload; controlled SMB readbacks match |
+| T29 | Real CT112 native service start/restart and reset-timer scheduling work as the dedicated service user. | IN PROGRESS | Actual eedac73 start and persistent timer active; hardened restart/reset action/final upgrade remain pending |
 | T30 | Frigate/Ollama/OpenAI/SMB outages pause only dependent work; recovery resumes durable jobs without duplicates. | IN PROGRESS | V02; offline scenario covered; required live/package/operational part pending |
 | T31 | Low disk and invalid/corrupt output do not publish broken data or delete retained history. | PASS | V02; offline scenario covered; required live/package/operational part pending |
 | T32 | Logs/config receipts/exceptions/archives/test evidence exclude seeded secret values and credential-bearing URLs. | PASS | V02; offline scenario covered; required live/package/operational part pending |

@@ -125,6 +125,11 @@ class Settings:
             required = ["LOCAL_IMAGE_ENCODER"]
         result = [k for k in required if self.values.get(k) in ("", None, [])]
         if stage == "portrait":
+            if (
+                "OPENAI_PORTRAIT_RESERVATION_USD" in self.values
+                and self.values["OPENAI_PORTRAIT_RESERVATION_USD"] == ""
+            ):
+                result.append("OPENAI_PORTRAIT_RESERVATION_USD")
             if not self.get("OPENAI_GENERATION_ENABLED"):
                 result.append("OPENAI_GENERATION_ENABLED")
             if not self.secrets.get("OPENAI_API_KEY"):
@@ -141,6 +146,14 @@ def load_settings(config: Path, secrets_file: Path, *, environ=None) -> Settings
     secrets = load_secrets(secrets_file, environ)
     if values.get("IDENTITY_MODE") not in ("shadow", "calibrated_auto", "per_observation"):
         raise ConfigError("unsupported IDENTITY_MODE")
+    if values.get("PORTRAIT_REVIEW_MODE", "operator") not in ("operator", "local_vlm"):
+        raise ConfigError("unsupported PORTRAIT_REVIEW_MODE")
+    reservation = values.get("OPENAI_PORTRAIT_RESERVATION_USD")
+    daily_budget = values.get("OPENAI_DAILY_BUDGET_USD")
+    if reservation not in (None, "") and (
+        reservation <= 0 or (daily_budget not in (None, "") and reservation > daily_budget)
+    ):
+        raise ConfigError("portrait reservation must be positive and within daily budget")
     policy = values.get("SOURCE_REFERENCE_POLICY", "full_body")
     if policy not in ("full_body", "best_effort_partial"):
         raise ConfigError("unsupported SOURCE_REFERENCE_POLICY")

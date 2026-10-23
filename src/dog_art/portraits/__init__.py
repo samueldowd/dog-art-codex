@@ -32,6 +32,10 @@ class PortraitError(ValueError):
     pass
 
 
+class StalePortraitReview(PortraitError):
+    pass
+
+
 def make_recipe(dog_id: str, description: DogDescription, settings) -> PortraitRecipe:
     style = Path(str(files("dog_art").joinpath("resources/dog-watercolor-transparent.png")))
     # Runtime resource selection is fixed to generated art; no arbitrary camera path accepted.
@@ -272,19 +276,207 @@ class PortraitService:
                 "returned portrait requires recovery/review; never resubmit automatically"
             ) from None
 
-    def accept(self, recipe_key, *, reviewer, evidence):
+    def recover_saved(self):
+        """Recover bound returned bytes without submitting or approving artwork.
+
+        The shared paid.lock protects recovery against live generation. Only a
+        persisted succeeded/needs_review request and its exact deterministic
+        recipe path authorize adoption. Missing/corrupt/conflicting files remain
+        explicit manual holds. No arbitrary directory scan or paid API is used.
+        Returns sanitized per-entry results; structural QA is not visual approval.
+        """
+        import hashlib
+        import os
+        import re
+        import stat
+
+        from ..daily import application_lock
+
+        root = Path(self.settings["APP_DATA_ROOT"])
+        lock = owned_path(root, "locks/paid.lock", create_parent=True)
+        results = []
+
+        def read_image(path):
+            checked = owned_path(root, path.relative_to(root).as_posix())
+            fd = os.open(checked, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            with os.fdopen(fd, "rb") as stream:
+                info = os.fstat(stream.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_size > 32 * 1024 * 1024:
+                    raise PortraitError("invalid saved regular file")
+                data = stream.read(32 * 1024 * 1024 + 1)
+            report = validate_png(data)
+            return hashlib.sha256(data).hexdigest(), report
+
+        with application_lock(lock):
+            entries = self.store.db.execute(
+                "SELECT p.*,r.request_id AS bound_request_id,r.state AS request_state "
+                "FROM portraits p JOIN requests r USING(recipe_key) "
+                "WHERE r.state IN ('succeeded','needs_review') "
+                "AND p.state IN ('succeeded','needs_review') ORDER BY p.recipe_key"
+            ).fetchall()
+            for row in entries:
+                error = digest = output = report = None
+                source = "png"
+                try:
+                    recipe = json.loads(row["recipe"])
+                    if (
+                        not isinstance(recipe, dict)
+                        or recipe.get("dog_id") != row["dog_id"]
+                        or not isinstance(recipe.get("style_version"), str)
+                        or row["recipe_key"] != row["dog_id"] + ":" + recipe["style_version"]
+                        or not isinstance(recipe.get("recipe_hash"), str)
+                        or re.fullmatch(r"[0-9a-f]{64}", recipe["recipe_hash"]) is None
+                        or (row["request_id"] and row["request_id"] != row["bound_request_id"])
+                    ):
+                        raise PortraitError("saved_portrait_binding_invalid")
+                    output = owned_path(
+                        root, f"portraits/{row['dog_id']}/{recipe['recipe_hash']}.png"
+                    )
+                    partial = owned_path(
+                        root, output.with_suffix(".partial").relative_to(root).as_posix()
+                    )
+                    if row["path"] and Path(row["path"]) != output:
+                        raise PortraitError("saved_portrait_binding_invalid")
+                    if not output.exists() and not partial.exists():
+                        raise PortraitError("saved_portrait_missing")
+                    if output.exists():
+                        digest, report = read_image(output)
+                        if partial.exists():
+                            staged_digest, _ = read_image(partial)
+                            if staged_digest != digest:
+                                raise PortraitError("saved_portrait_conflict")
+                    else:
+                        digest, report = read_image(partial)
+                        if row["sha256"] and row["sha256"] != digest:
+                            raise PortraitError("saved_portrait_conflict")
+                        # Complete staging bytes become visible atomically and
+                        # create-only. Retain staging evidence across DB crashes.
+                        try:
+                            os.link(partial, output, follow_symlinks=False)
+                        except FileExistsError:
+                            raise PortraitError("saved_portrait_conflict") from None
+                        directory = os.open(output.parent, os.O_RDONLY)
+                        try:
+                            os.fsync(directory)
+                        finally:
+                            os.close(directory)
+                        installed_digest, _ = read_image(output)
+                        if installed_digest != digest:
+                            raise PortraitError("saved_portrait_conflict")
+                        source = "partial"
+                    if row["sha256"] and row["sha256"] != digest:
+                        raise PortraitError("saved_portrait_conflict")
+                    # A generator killed before chmod can leave mode 0644.
+                    os.chmod(output, 0o600, follow_symlinks=False)
+                except PortraitError as exc:
+                    code = str(exc)
+                    error = (
+                        code
+                        if code
+                        in {
+                            "saved_portrait_binding_invalid",
+                            "saved_portrait_missing",
+                            "saved_portrait_conflict",
+                        }
+                        else "saved_portrait_invalid"
+                    )
+                except (OSError, ValueError, TypeError, KeyError):
+                    error = "saved_portrait_invalid"
+
+                changed = (
+                    error != row["error_code"]
+                    or row["state"] != "needs_review"
+                    or row["request_state"] != "needs_review"
+                )
+                if error is None:
+                    changed = changed or (
+                        row["path"] != str(output)
+                        or row["sha256"] != digest
+                        or row["request_id"] != row["bound_request_id"]
+                    )
+                with self.store.transaction() as db:
+                    current = db.execute(
+                        "SELECT p.*,r.request_id AS bound_request_id,r.state AS request_state "
+                        "FROM portraits p JOIN requests r USING(recipe_key) WHERE p.recipe_key=?",
+                        (row["recipe_key"],),
+                    ).fetchone()
+                    if current is None or dict(current) != dict(row):
+                        raise PortraitError(
+                            "saved recovery binding changed; retry without submitting"
+                        )
+                    if row["request_state"] == "succeeded":
+                        self.ledger.transition(
+                            row["bound_request_id"], "succeeded", "needs_review", db=db
+                        )
+                    if error:
+                        db.execute(
+                            "UPDATE portraits SET state='needs_review',error_code=? WHERE recipe_key=?",
+                            (error, row["recipe_key"]),
+                        )
+                    else:
+                        db.execute(
+                            "UPDATE portraits SET state='needs_review',path=?,sha256=?,request_id=?,error_code=NULL WHERE recipe_key=?",
+                            (str(output), digest, row["bound_request_id"], row["recipe_key"]),
+                        )
+                    if changed:
+                        self.store.audit(
+                            "portrait_saved_recovery_hold" if error else "portrait_saved_recovered",
+                            {
+                                "recipe_key": row["recipe_key"],
+                                "request_id": row["bound_request_id"],
+                                "error_code": error,
+                                "sha256": digest if not error else None,
+                                "source": source if not error else None,
+                            },
+                            self.clock.now().timestamp(),
+                            db=db,
+                        )
+                result = {
+                    "recipe_key": row["recipe_key"],
+                    "request_id": row["bound_request_id"],
+                    "state": "needs_review",
+                    "recovered": changed and error is None,
+                    "error_code": error,
+                }
+                if error is None:
+                    result.update(path=str(output), sha256=digest, qa=report)
+                results.append(result)
+        return results
+
+    def accept(self, recipe_key, *, reviewer, evidence, expected_review=None):
         if not reviewer or not evidence:
             raise PortraitError("visual reviewer and evidence required")
-        row = self.store.db.execute(
-            "SELECT p.*,r.request_id AS ledger_request_id FROM portraits p JOIN requests r USING(recipe_key) WHERE recipe_key=?",
-            (recipe_key,),
-        ).fetchone()
-        if row is None or row["state"] not in {"needs_review", "validated"} or not row["path"]:
-            raise PortraitError("saved portrait awaiting review required")
-        if sha256(Path(row["path"])) != row["sha256"]:
-            raise PortraitError("portrait content changed")
-        validate_png(Path(row["path"]).read_bytes())
         with self.store.transaction() as db:
+            row = db.execute(
+                "SELECT p.*,r.request_id AS ledger_request_id FROM portraits p JOIN requests r USING(recipe_key) WHERE recipe_key=?",
+                (recipe_key,),
+            ).fetchone()
+            if row is None or row["state"] not in {"needs_review", "validated"} or not row["path"]:
+                raise PortraitError("saved portrait awaiting review required")
+            if row["error_code"]:
+                raise PortraitError("saved portrait recovery hold requires reconciliation")
+            if expected_review is not None:
+                source = db.execute(
+                    "SELECT o.dog_id,d.payload,d.model,d.digest FROM observations o JOIN descriptions d USING(observation_id) WHERE o.observation_id=? AND o.state='accepted'",
+                    (expected_review["observation_id"],),
+                ).fetchone()
+                if (
+                    any(row[k] != v for k, v in expected_review["portrait"].items())
+                    or source is None
+                    or dict(source) != expected_review["source"]
+                    or self.store.canonical(source["dog_id"], db) != expected_review["canonical"]
+                    or self.store.canonical(row["dog_id"], db) != expected_review["canonical"]
+                    or db.execute(
+                        "SELECT state FROM dogs WHERE dog_id=?", (expected_review["canonical"],)
+                    ).fetchone()[0]
+                    != "accepted"
+                ):
+                    raise StalePortraitReview("source or saved recipe changed during review")
+            root = Path(self.settings["APP_DATA_ROOT"]) / "portraits"
+            path = owned_path(root, Path(row["path"]).relative_to(root).as_posix())
+            if sha256(path) != row["sha256"]:
+                raise PortraitError("portrait content changed")
+            validate_png(path.read_bytes())
             if row["state"] == "needs_review":
                 self.ledger.transition(row["ledger_request_id"], "needs_review", "validated", db=db)
             self.store.audit(

@@ -1,0 +1,5 @@
+{
+  "type": "custom:dog-art-picture",
+  "media_content_id": "media-source://media_source/local/kitchen-tv/dog-art/dog-collage.png",
+  "refresh_interval": 30
+}

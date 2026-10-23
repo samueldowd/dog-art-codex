@@ -47,6 +47,8 @@ SCHEMAS = {
         "ALLOW_CAMERA_CROP_UPLOAD": "boolean",
         "OPENAI_GENERATION_ENABLED": "boolean",
         "OPENAI_DAILY_BUDGET_USD": "number",
+        "OPENAI_PORTRAIT_RESERVATION_USD": "number",
+        "PORTRAIT_REVIEW_MODE": "string",
         "OPENAI_MAX_CALLS_PER_DAY": "integer",
         "OPENAI_MAX_AUTOMATIC_ATTEMPTS_PER_PORTRAIT": "integer",
         "OPENAI_HTTP_TIMEOUT_SECONDS": "integer",

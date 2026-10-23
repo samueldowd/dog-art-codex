@@ -144,6 +144,9 @@ OPENAI_GENERATION_ENABLED = false
 # UNKNOWN: Explicit numeric ongoing image-generation cap; blank blocks live generation.
 # TYPE: number
 OPENAI_DAILY_BUDGET_USD = 5
+# Conservative per-image estimate for the pinned model/size/quality; daily/call caps still apply.
+OPENAI_PORTRAIT_RESERVATION_USD = 0.50
+PORTRAIT_REVIEW_MODE = "local_vlm"
 # UNKNOWN: Explicit numeric hard call count; blank blocks live generation.
 # TYPE: integer
 OPENAI_MAX_CALLS_PER_DAY = 12

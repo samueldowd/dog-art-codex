@@ -8,15 +8,15 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .budget import Ledger
+from .budget import BudgetError, Ledger
 from .clock import Clock
 from .daily import DailyManager, PortraitPendingError
 from .description import OllamaDescriber
 from .frigate import EventIngestor, FrigateClient, PollReconciler, parse_event
 from .identity import IdentityEngine, OnnxImageEncoder
-from .portraits import PortraitService
+from .portraits import STYLE_VERSION, PortraitService
 from .publishing import Publisher
-from .safety import disk_guard, owned_path
+from .safety import disk_guard, fingerprint, owned_path, sha256
 from .serialization import description_from_dict, observation_dict, observation_from_dict
 from .storage import Store
 from .vision import CropExtractor, DecodedFrame, MediaError, decode_image, snapshot_sample
@@ -26,6 +26,10 @@ log = logging.getLogger("dog_art")
 
 class DependencyWait(ValueError):
     pass
+
+
+class PortraitBudgetWait(DependencyWait):
+    """No request was reserved; next-day capacity can safely wake this preflight."""
 
 
 class Pipeline:
@@ -40,6 +44,7 @@ class Pipeline:
         describer=None,
         encoder=None,
         publisher=None,
+        portrait_reviewer=None,
     ):
         if mode not in ("shadow", "live"):
             raise ValueError("explicit shadow/live mode required")
@@ -53,12 +58,13 @@ class Pipeline:
         self.describer = describer
         self.encoder = encoder
         self.publisher = publisher
+        self.portrait_reviewer = portrait_reviewer
         self.daily = DailyManager(self.store, settings, self.clock)
         self.identity = IdentityEngine(self.store, settings, self.clock)
         self.stop = False
 
     def close(self):
-        for adapter in (self.source, self.describer):
+        for adapter in (self.source, self.describer, self.portrait_reviewer):
             if adapter and hasattr(adapter, "close"):
                 adapter.close()
         self.store.close()
@@ -337,14 +343,229 @@ class Pipeline:
             ).fetchone()
             if row is None:
                 raise DependencyWait("description_pending")
-            # Conservative reservation equals the ongoing numeric cap. Only one
-            # automatic new portrait/day until actual reviewed cost policy changes.
-            return PortraitService(self.store, self.settings, self.clock).generate(
-                payload["dog_id"],
-                description_from_dict(json.loads(row[0])),
-                reserve_usd=self.settings["OPENAI_DAILY_BUDGET_USD"],
-            )
+            try:
+                result = PortraitService(self.store, self.settings, self.clock).generate(
+                    payload["dog_id"],
+                    description_from_dict(json.loads(row[0])),
+                    reserve_usd=self.settings.get(
+                        "OPENAI_PORTRAIT_RESERVATION_USD", self.settings["OPENAI_DAILY_BUDGET_USD"]
+                    ),
+                )
+            except BudgetError:
+                key = self.store.canonical(payload["dog_id"]) + ":" + STYLE_VERSION
+                if self.store.db.execute(
+                    "SELECT 1 FROM requests WHERE recipe_key=?", (key,)
+                ).fetchone():
+                    raise
+                raise PortraitBudgetWait(
+                    "capacity unavailable before request reservation"
+                ) from None
+            self._queue_portrait_reviews()
+            return result
+        if kind == "portrait_review":
+            return self.review_portrait(payload)
         raise DependencyWait("unsupported_job_kind")
+
+    def _queue_missing_portraits(self):
+        if self.mode != "live" or not self.settings.get("OPENAI_GENERATION_ENABLED"):
+            return
+        rows = self.store.db.execute(
+            "SELECT dog_id FROM membership WHERE day=?", (self.clock.day(),)
+        ).fetchall()
+        for member in rows:
+            dog_id = self.store.canonical(member[0])
+            key = dog_id + ":" + STYLE_VERSION
+            if (
+                self.store.db.execute(
+                    "SELECT 1 FROM portraits WHERE recipe_key=?", (key,)
+                ).fetchone()
+                or self.store.db.execute(
+                    "SELECT 1 FROM jobs WHERE dedup_key=?", ("portrait:" + dog_id,)
+                ).fetchone()
+            ):
+                continue
+            source = next(
+                (
+                    o[0]
+                    for o in self.store.db.execute(
+                        "SELECT observation_id,dog_id FROM observations WHERE state='accepted' ORDER BY observed_at,observation_id"
+                    ).fetchall()
+                    if self.store.canonical(o[1]) == dog_id
+                ),
+                None,
+            )
+            if source:
+                self.store.enqueue(
+                    "portrait",
+                    "portrait:" + dog_id,
+                    {"dog_id": dog_id, "observation_id": source},
+                    self.clock.now().timestamp(),
+                    max_attempts=1,
+                )
+
+    def _review_key(self, row, observation_id, description_payload):
+        from .portraits.review import QA_POLICY_VERSION, QA_PROMPT_SHA256
+
+        return fingerprint(
+            {
+                "recipe_key": row["recipe_key"],
+                "sha256": row["sha256"],
+                "observation_id": observation_id,
+                "description": json.loads(description_payload),
+                "policy": QA_POLICY_VERSION,
+                "prompt": QA_PROMPT_SHA256,
+                "model": self.settings["OLLAMA_MODEL"],
+                "digest": self.settings["OLLAMA_MODEL_DIGEST"],
+                "source_policy": self.settings.get("SOURCE_REFERENCE_POLICY", "full_body"),
+            }
+        )
+
+    def _queue_portrait_reviews(self):
+        if (
+            self.mode != "live"
+            or self.settings.get("PORTRAIT_REVIEW_MODE", "operator") != "local_vlm"
+        ):
+            return
+        for row in self.store.db.execute(
+            "SELECT * FROM portraits WHERE state='needs_review' AND path IS NOT NULL AND sha256 IS NOT NULL AND error_code IS NULL"
+        ).fetchall():
+            source = self.store.db.execute(
+                "SELECT o.observation_id,d.payload FROM observations o JOIN descriptions d USING(observation_id) WHERE o.dog_id=? AND o.state='accepted' ORDER BY o.observed_at,o.observation_id LIMIT 1",
+                (row["dog_id"],),
+            ).fetchone()
+            if source:
+                key = self._review_key(row, source[0], source[1])
+                self.store.enqueue(
+                    "portrait_review",
+                    "portrait_review:" + key,
+                    {
+                        "recipe_key": row["recipe_key"],
+                        "observation_id": source[0],
+                        "review_key": key,
+                    },
+                    self.clock.now().timestamp(),
+                    max_attempts=self.settings["READ_RETRY_ATTEMPTS"],
+                )
+
+    def review_portrait(self, payload):
+        if (
+            self.mode != "live"
+            or self.settings.get("PORTRAIT_REVIEW_MODE", "operator") != "local_vlm"
+        ):
+            raise DependencyWait("local portrait review disabled")
+        row = self.store.db.execute(
+            "SELECT * FROM portraits WHERE recipe_key=?", (payload["recipe_key"],)
+        ).fetchone()
+        if not row or not row["path"] or not row["sha256"]:
+            raise DependencyWait("saved portrait required")
+        if row["state"] == "validated":
+            return {"decision": "already_validated"}
+        if row["state"] != "needs_review":
+            raise DependencyWait("saved portrait not ready for review")
+        if row["error_code"]:
+            raise DependencyWait("saved portrait recovery requires operator review")
+        source = self.store.db.execute(
+            "SELECT o.dog_id,d.payload,d.model,d.digest FROM observations o JOIN descriptions d USING(observation_id) WHERE o.observation_id=? AND o.state='accepted'",
+            (payload["observation_id"],),
+        ).fetchone()
+        if not source or self.store.canonical(source[0]) != self.store.canonical(row["dog_id"]):
+            raise ValueError("portrait source association differs")
+        if payload["review_key"] != self._review_key(row, payload["observation_id"], source[1]):
+            return {"decision": "stale_policy; current review queued separately"}
+        expected_review = {
+            "observation_id": payload["observation_id"],
+            "source": dict(source),
+            "portrait": {k: row[k] for k in ("dog_id", "recipe", "path", "sha256", "state")},
+            "canonical": self.store.canonical(row["dog_id"]),
+        }
+        portrait_root = Path(self.settings["APP_DATA_ROOT"]) / "portraits"
+        relative = Path(row["path"]).relative_to(portrait_root)
+        portrait_path = owned_path(portrait_root, relative.as_posix())
+        if sha256(portrait_path) != row["sha256"]:
+            raise ValueError("portrait changed before review")
+        if self.portrait_reviewer is None:
+            from .portraits.review import LocalPortraitReviewer
+
+            self.portrait_reviewer = LocalPortraitReviewer(self.settings)
+        report = self.portrait_reviewer.review(
+            Path(row["path"]), row["sha256"], description_from_dict(json.loads(source[1]))
+        )
+        self.store.audit(
+            "portrait_local_review",
+            {"recipe_key": row["recipe_key"], "review_key": payload["review_key"], **report},
+            self.clock.now().timestamp(),
+        )
+        if report.get("retryable") is True:
+            raise RuntimeError("transient local portrait review failure")
+        if report["decision"] == "pass":
+            from importlib.resources import files
+
+            from .portraits.review import QA_POLICY_VERSION, QA_PROMPT_SHA256
+
+            expected = {
+                "image_sha256": row["sha256"],
+                "description_sha256": fingerprint(
+                    asdict(description_from_dict(json.loads(source[1])))
+                ),
+                "style_sha256": sha256(
+                    Path(str(files("dog_art").joinpath("resources/dog-watercolor-transparent.png")))
+                ),
+                "model": self.settings["OLLAMA_MODEL"],
+                "digest": self.settings["OLLAMA_MODEL_DIGEST"],
+                "policy_version": QA_POLICY_VERSION,
+                "prompt_sha256": QA_PROMPT_SHA256,
+                "source_reference_policy": self.settings.get(
+                    "SOURCE_REFERENCE_POLICY", "full_body"
+                ),
+            }
+            evidence = report.get("evidence", {})
+            checks = evidence.get("checks", {})
+            if (
+                any(report.get(k) != v for k, v in expected.items())
+                or evidence.get("input_provenance") != "generated_artwork"
+                or evidence.get("model_verified_before_and_after") is not True
+                or evidence.get("reasons") != []
+                or set(checks)
+                != {
+                    "one_dog",
+                    "complete_anatomy",
+                    "no_extras",
+                    "style_matches",
+                    "confirmed_facts_match",
+                    "clean_exterior",
+                }
+                or not all(v is True for v in checks.values())
+            ):
+                raise ValueError("passing portrait review provenance differs")
+            from .portraits import StalePortraitReview
+
+            if payload["review_key"] != self._review_key(row, payload["observation_id"], source[1]):
+                return {"decision": "stale_policy; current review queued separately"}
+            try:
+                PortraitService(self.store, self.settings, self.clock).accept(
+                    row["recipe_key"],
+                    reviewer="pinned local Ollama saved-output QA",
+                    evidence=json.dumps(
+                        {"review_key": payload["review_key"], **report}, sort_keys=True
+                    ),
+                    expected_review=expected_review,
+                )
+            except StalePortraitReview:
+                self.store.audit(
+                    "portrait_review_stale",
+                    {"recipe_key": row["recipe_key"]},
+                    self.clock.now().timestamp(),
+                )
+                return {"decision": "stale_source; fresh associated evidence required"}
+        return report
+
+    def _resume_portrait_budget(self):
+        if self.mode != "live" or not self.settings.get("OPENAI_GENERATION_ENABLED"):
+            return
+        self.store.db.execute(
+            "UPDATE jobs SET state='queued',available_at=?,error_code=NULL WHERE kind='portrait' AND state='dependency_wait' AND error_code='PortraitBudgetWait' AND attempts<max_attempts AND json_extract(payload,'$.budget_wait_day')!=?",
+            (self.clock.now().timestamp(), self.clock.day()),
+        )
 
     def work_once(self):
         job = self.store.claim(self.clock.now().timestamp(), self.settings["JOB_LEASE_SECONDS"])
@@ -353,6 +574,12 @@ class Pipeline:
         try:
             self.dispatch(job)
             self.store.finish(job["job_id"], job["lease_token"])
+        except PortraitBudgetWait:
+            # No ledger row exists, so this did not consume a paid attempt.
+            self.store.db.execute(
+                "UPDATE jobs SET state='dependency_wait',attempts=attempts-1,lease_until=NULL,lease_token=NULL,error_code='PortraitBudgetWait',payload=json_set(payload,'$.budget_wait_day',?) WHERE job_id=? AND lease_token=?",
+                (self.clock.day(), job["job_id"], job["lease_token"]),
+            )
         except (DependencyWait, PortraitPendingError) as error:
             with self.store.transaction() as db:
                 db.execute(
@@ -403,6 +630,9 @@ class Pipeline:
             self.daily.reconcile()
         except Exception as error:
             log.warning(json.dumps({"code": type(error).__name__, "stage": "rollover"}))
+        self._resume_portrait_budget()
+        self._queue_missing_portraits()
+        self._queue_portrait_reviews()
         if reconcile_source:
             try:
                 PollReconciler(
@@ -425,6 +655,7 @@ class Pipeline:
 
     def run(self, *, once=False):
         Ledger(self.store).recover()
+        PortraitService(self.store, self.settings, self.clock).recover_saved()
         if once:
             return self.tick()
 
