@@ -141,6 +141,11 @@ def load_settings(config: Path, secrets_file: Path, *, environ=None) -> Settings
     secrets = load_secrets(secrets_file, environ)
     if values.get("IDENTITY_MODE") not in ("shadow", "calibrated_auto", "per_observation"):
         raise ConfigError("unsupported IDENTITY_MODE")
+    policy = values.get("SOURCE_REFERENCE_POLICY", "full_body")
+    if policy not in ("full_body", "best_effort_partial"):
+        raise ConfigError("unsupported SOURCE_REFERENCE_POLICY")
+    if policy == "best_effort_partial" and values.get("IDENTITY_MODE") != "per_observation":
+        raise ConfigError("partial references require per_observation mode")
     if values.get("FRIGATE_AUTH_MODE") not in ("", "none", "bearer", "session", "basic"):
         raise ConfigError("unsupported FRIGATE_AUTH_MODE")
     mode = values.get("FRIGATE_AUTH_MODE")

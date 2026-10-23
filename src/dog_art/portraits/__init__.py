@@ -35,7 +35,16 @@ class PortraitError(ValueError):
 def make_recipe(dog_id: str, description: DogDescription, settings) -> PortraitRecipe:
     style = Path(str(files("dog_art").joinpath("resources/dog-watercolor-transparent.png")))
     # Runtime resource selection is fixed to generated art; no arbitrary camera path accepted.
-    prompt = STYLE_PROMPT + json.dumps(asdict(description), sort_keys=True)
+    policy = settings.get("SOURCE_REFERENCE_POLICY", "full_body")
+    source_note = (
+        "Source reference policy: best-effort partial view. Full-body pose completion is an "
+        "artistic interpretation, not evidence of unseen anatomy or markings. Preserve only "
+        "confirmed appearance facts; keep unseen face/chest/other markings conservative. "
+        "Never copy distinctive missing details from the style dog.\n"
+        if policy == "best_effort_partial"
+        else ""
+    )
+    prompt = STYLE_PROMPT + source_note + json.dumps(asdict(description), sort_keys=True)
     if len(prompt) > 12000:
         raise PortraitError("description exceeds bounded prompt")
     metadata = {
@@ -47,6 +56,7 @@ def make_recipe(dog_id: str, description: DogDescription, settings) -> PortraitR
         "size": settings["OPENAI_IMAGE_SIZE"],
         "quality": settings["OPENAI_IMAGE_QUALITY"],
         "input_policy": "artwork_only",
+        "source_reference_policy": policy,
     }
     return PortraitRecipe(
         dog_id,
@@ -229,6 +239,12 @@ class PortraitService:
             temporary.chmod(0o600)
             temporary.replace(output)
             report = validate_png(data)
+            report["source_reference_policy"] = settings.get("SOURCE_REFERENCE_POLICY", "full_body")
+            report["source_limitations"] = list(description.uncertainty)
+            report["occluded_source_areas"] = list(description.occluded_areas)
+            report["likeness_review_scope"] = (
+                "confirmed observed facts; unseen details are interpretation"
+            )
             digest = sha256(output)
             self.store.db.execute(
                 "UPDATE portraits SET path=?,sha256=? WHERE recipe_key=?",

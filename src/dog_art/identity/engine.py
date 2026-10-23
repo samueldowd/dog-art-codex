@@ -3,7 +3,7 @@
 import json
 import math
 import uuid
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 from dog_art.contracts import DogDescription, IdentityDecision, ImageFeature
 from dog_art.description import has_observed_appearance, parse_description, validate_observation
@@ -208,9 +208,12 @@ class IdentityEngine:
             )
             manual_full_body = visibility.get("full_body") is True
             manual_rejection = visibility.get("full_body") is False
-            if manual_rejection or (
-                not all(c.full_body for c in observation.crops) and not manual_full_body
-            ):
+            full_body_verified = (
+                all(c.full_body for c in observation.crops) or manual_full_body
+            ) and not manual_rejection
+            source_policy = self.settings.get("SOURCE_REFERENCE_POLICY", "full_body")
+            allow_partial = mode == "per_observation" and source_policy == "best_effort_partial"
+            if manual_rejection or (not full_body_verified and not allow_partial):
                 decision = IdentityDecision(
                     "uncertain",
                     None,
@@ -221,6 +224,23 @@ class IdentityEngine:
                     "full-body visibility rejected by operator"
                     if manual_rejection
                     else "full-body visibility not verified",
+                )
+            partial_reference_used = (
+                allow_partial and not full_body_verified and decision.outcome == "new"
+            )
+            source_limitation = (
+                "partial or unverified source reference; complete source silhouette unverified; use only observed appearance facts and keep unseen markings unknown"
+                if not full_body_verified
+                else None
+            )
+            if partial_reference_used:
+                decision = replace(
+                    decision,
+                    rationale=decision.rationale
+                    + (
+                        "SOURCE_REFERENCE_POLICY=best_effort_partial explicitly selected",
+                        source_limitation,
+                    ),
                 )
             if mode not in {"calibrated_auto", "per_observation"} and decision.outcome in {
                 "new",
@@ -253,7 +273,15 @@ class IdentityEngine:
                 )
             self.store.audit(
                 "identity_decision",
-                {"observation_id": observation.observation_id, **asdict(decision)},
+                {
+                    "observation_id": observation.observation_id,
+                    **asdict(decision),
+                    "source_reference_policy": source_policy,
+                    "partial_reference_used": partial_reference_used,
+                    "source_full_body_verified": full_body_verified,
+                    "source_full_body_flags": [c.full_body for c in observation.crops],
+                    "source_limitation": source_limitation,
+                },
                 now,
                 db,
             )

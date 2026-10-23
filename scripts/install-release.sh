@@ -53,11 +53,12 @@ for unit in dog-art.service dog-art-reset.service dog-art-reset.timer; do
  if [ -f "/etc/systemd/system/$unit" ]; then cp -p "/etc/systemd/system/$unit" "$release/previous-units/$unit"; fi
 done
 promoting=0
+promotion_step=not-started
 rollback() {
  result=$?
  trap - EXIT HUP INT TERM
  if [ "$promoting" -eq 1 ] && [ "$result" -ne 0 ]; then
-  echo 'Promotion failed; restoring previous application pointer and units.' >&2
+  echo "Promotion failed during $promotion_step; restoring previous application pointer and units." >&2
   systemctl status dog-art.service dog-art-reset.timer --no-pager --lines=5 >&2 || true
   journalctl -u dog-art.service -u dog-art-reset.timer -n 30 --no-pager -o cat >&2 || true
   systemctl stop dog-art.service dog-art-reset.timer || true
@@ -97,17 +98,38 @@ done
 ln -s "$release" /opt/dog-art/.next
 mv -Tf /opt/dog-art/.next /opt/dog-art/current
 printf '%s\n' "$revision" > "$release/SOURCE_REVISION"
+promotion_step=reload-and-enable
 systemctl daemon-reload
 systemctl enable dog-art.service dog-art-reset.timer
-# --now does not restart an already-running worker during an upgrade.
+# Restart upgrades, and wait for successful exec via Type=exec.
+promotion_step=restart
 systemctl restart dog-art.service dog-art-reset.timer
-systemctl is-active --quiet dog-art.service
+promotion_step=stable-running-release
+attempt=0
+stable=0
+last_pid=
+while [ "$attempt" -lt 20 ]; do
+ attempt=$((attempt + 1))
+ pid=$(systemctl show dog-art.service --property MainPID --value)
+ case "$pid" in ''|*[!0-9]*) pid=0;; esac
+ if [ "$pid" -gt 0 ] && systemctl is-active --quiet dog-art.service &&
+    [ -r "/proc/$pid/cmdline" ] &&
+    tr '\000' '\n' < "/proc/$pid/cmdline" | grep -Fx "$release/venv/bin/dog-art" >/dev/null; then
+  if [ "$pid" = "$last_pid" ]; then stable=$((stable + 1)); else stable=1; fi
+  last_pid=$pid
+  [ "$stable" -lt 2 ] || break
+ else
+  stable=0
+  last_pid=
+ fi
+ sleep 1
+done
+[ "$stable" -ge 2 ] || { echo 'Running worker did not stabilize on expected release within 20 checks' >&2; exit 1; }
+promotion_step=timer-active
 systemctl is-active --quiet dog-art-reset.timer
-# Confirm the running worker holds this release, not merely the new symlink.
-pid=$(systemctl show dog-art.service --property MainPID --value)
-[ "$pid" -gt 0 ]
-tr '\000' '\n' < "/proc/$pid/cmdline" | grep -Fx "$release/venv/bin/dog-art" >/dev/null
+promotion_step=installed-import
 runuser -u dog-art -- "$release/venv/bin/python" -c 'import dog_art; print("Installed import:", dog_art.__file__)'
+promotion_step=timer-schedule
 systemctl list-timers dog-art-reset.timer --no-pager
 promoting=0
-printf '%s\n' 'Installed shadow service. Calibrated live promotion and actual dashboard acceptance remain separate.'
+printf '%s\n' 'Installed shadow service. Reviewed live promotion and actual dashboard acceptance remain separate.'

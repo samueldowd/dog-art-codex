@@ -2,7 +2,7 @@
 
 The runtime reads only explicit app TOML plus the selected dotenv. Build settings remain on the build host. Native numeric/boolean/array types are required; blank placeholders stay unconfigured. Unknown/duplicate/wrong-file keys fail without echoing values. Secret precedence: selected file then explicit allowlisted process values; no interpolation or shell evaluation. No parent-directory dotenv search.
 
-Current source settings select per_observation appearance entries and disable automatic generation/publication; the operational worker starts in shadow mode. Full-body source visibility still needs review. Recognition thresholds/calibration apply only if calibrated_auto is explicitly selected later. `LOCAL_IMAGE_ENCODER` and `LOCAL_DOG_DETECTOR` point to explicit protected JSON manifests, not a network model name; the app never downloads weights. Verified target uses CPU. Source camera mapping and SMB target were discovered read-only. See original [catalog and semantics](03-CONFIGURATION.md), [current app file](../config/app.toml), [build file](../config/build.toml), [blank secret template](../config/.env.example), and [actual decisions](IMPLEMENTATION_DECISIONS.md).
+Current source settings select per_observation appearance entries and disable automatic generation/publication; the operational worker starts in shadow mode. User-selected best_effort_partial permits usable partial source references, with explicit limitations and observed facts required. Recognition thresholds/calibration apply only if calibrated_auto is explicitly selected later. `LOCAL_IMAGE_ENCODER` and `LOCAL_DOG_DETECTOR` point to explicit protected JSON manifests, not a network model name; the app never downloads weights. Verified target uses CPU. Source camera mapping and SMB target were discovered read-only. See original [catalog and semantics](03-CONFIGURATION.md), [current app file](../config/app.toml), [build file](../config/build.toml), [blank secret template](../config/.env.example), and [actual decisions](IMPLEMENTATION_DECISIONS.md).
 
 ## Runtime app keys
 
@@ -37,6 +37,7 @@ Current source settings select per_observation appearance entries and disable au
 | `LOCAL_IMAGE_ENCODER` | string |
 | `LOCAL_ENCODER_DEVICE` | string |
 | `IDENTITY_MODE` | string |
+| `SOURCE_REFERENCE_POLICY` | string |
 | `IDENTITY_MATCH_THRESHOLD` | number |
 | `IDENTITY_NEW_THRESHOLD` | number |
 | `IDENTITY_SCORE_MARGIN` | number |
@@ -118,4 +119,4 @@ CLI global `--config`, `--secrets-file`, and optional `--data-root` are explicit
 
 The legacy `MIN_DOG_CROP_EDGE_PX` key is ignored; the selected value is0. No minimum crop dimensions reject observations. Retain small crops for local description/identity review; size does not prove visibility or identity. Maximum decoder byte/pixel bounds protect resources. `MIN_FREE_DISK_MB=2048` remains the independently authorized disk-space guard.
 
-`IDENTITY_MODE="per_observation"` is the explicitly selected mode after the user deferred duplicate prevention. It needs the genuine encoder but no recognition thresholds/calibration. Each qualifying immutable observation becomes one separate appearance ID, not a claim about physical identity. `calibrated_auto` retains all real evaluation gates; `shadow` retains operator identity review. Full-body/visibility safeguards apply to every mode.
+`IDENTITY_MODE="per_observation"` is the explicitly selected mode after the user deferred duplicate prevention. It needs the genuine encoder but no recognition thresholds/calibration. Each qualifying immutable observation becomes one separate appearance ID, not a claim about physical identity. `calibrated_auto` retains all real evaluation gates; `shadow` retains operator identity review. Human rejection/invalid quality/conflicts/wholly unknown facts remain blocked in every mode. SOURCE_REFERENCE_POLICY defaults to full_body; explicit best_effort_partial is supported only for per_observation, preserves original crop flags and records limitations. Generated output still needs full-body visual QA.

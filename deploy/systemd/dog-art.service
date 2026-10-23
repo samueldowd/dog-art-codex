@@ -1,10 +1,10 @@
 [Unit]
-Description=Dog Art native pipeline (shadow until calibrated)
+Description=Dog Art native pipeline (shadow until live acceptance)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+Type=exec
 User=dog-art
 Group=dog-art
 Environment=DOG_ART_MODE=shadow

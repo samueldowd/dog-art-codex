@@ -56,6 +56,7 @@ class Encoder:
 @pytest.mark.parametrize("cached", [False, True])
 def test_source_outage_does_not_block_rollover_or_work(tmp_path, cached):
     settings = config(tmp_path)
+    settings = Settings({**settings.values, "SOURCE_REFERENCE_POLICY": "full_body"})
     clock = FrozenClock(NOW)
     pipe = Pipeline(
         settings, clock=clock, source=Unavailable(), describer=Description(), encoder=Encoder()

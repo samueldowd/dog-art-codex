@@ -96,6 +96,8 @@ LOCAL_ENCODER_DEVICE = "cpu"
 # DEFAULT: No uncalibrated automatic merges. Switch to calibrated_auto only after acceptance evidence.
 # TYPE: string
 IDENTITY_MODE = "per_observation"
+# User-authorized partial sources; unseen markings remain unknown.
+SOURCE_REFERENCE_POLICY = "best_effort_partial"
 # UNKNOWN: Model-specific threshold from labeled independent-event calibration.
 # TYPE: number
 IDENTITY_MATCH_THRESHOLD = ""

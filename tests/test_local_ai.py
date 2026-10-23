@@ -842,3 +842,117 @@ def test_unknown_explanations_are_not_stable_appearance(phrase):
     from dog_art.description import has_observed_appearance
 
     assert not has_observed_appearance(DogDescription(markings=phrase))
+
+
+def test_explicit_partial_policy_accepts_observed_facts_without_falsifying_source(tmp_path):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "authorized-partial")
+    obs = replace(obs, crops=(replace(obs.crops[0], full_body=False),), visibility="partial")
+    persist(store, obs)
+    original_payload = store.db.execute("SELECT payload FROM observations").fetchone()[0]
+    facts = DogDescription(
+        coat_colors=("white",),
+        visible_areas=("torso",),
+        occluded_areas=("paws", "tail"),
+        uncertainty=("complete silhouette unavailable",),
+    )
+    engine = IdentityEngine(
+        store,
+        settings(IDENTITY_MODE="per_observation", SOURCE_REFERENCE_POLICY="best_effort_partial"),
+        FrozenClock(NOW),
+    )
+    result = engine.process(obs, facts, (feature(),))
+    assert result.outcome == "new" and result.dog_id
+    assert not obs.crops[0].full_body and obs.visibility == "partial"
+    assert store.db.execute("SELECT payload FROM observations").fetchone()[0] == original_payload
+    saved_facts = json.loads(store.db.execute("SELECT payload FROM descriptions").fetchone()[0])
+    assert saved_facts["tail"] is None and saved_facts["markings"] is None
+    assert saved_facts["occluded_areas"] == ["paws", "tail"]
+    evidence = json.loads(
+        store.db.execute("SELECT payload FROM audit WHERE code='identity_decision'").fetchone()[0]
+    )
+    assert evidence["source_reference_policy"] == "best_effort_partial"
+    assert evidence["partial_reference_used"] is True
+    assert evidence["source_full_body_verified"] is False
+    assert evidence["source_full_body_flags"] == [False]
+    assert "unseen markings unknown" in evidence["source_limitation"]
+    assert any("complete source silhouette unverified" in item for item in result.rationale)
+    assert engine.process(obs, facts, (feature(),)).dog_id == result.dog_id
+    assert store.db.execute("SELECT count(*) FROM dogs").fetchone()[0] == 1
+    store.close()
+
+
+@pytest.mark.parametrize(
+    "condition",
+    ["human_rejected", "invalid_quality", "conflicting_appearance", "unknown_appearance"],
+)
+def test_partial_policy_never_overrides_other_appearance_safeguards(tmp_path, condition):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "partial-" + condition)
+    obs = replace(obs, crops=(replace(obs.crops[0], full_body=False),), visibility="partial")
+    facts = description()
+    if condition == "invalid_quality":
+        obs = replace(obs, quality=0.0)
+    elif condition == "conflicting_appearance":
+        facts = description(uncertainty=("conflicting views: markings",))
+    elif condition == "unknown_appearance":
+        facts = DogDescription(visible_areas=("body",), uncertainty=("appearance unknown",))
+    persist(store, obs)
+    if condition == "human_rejected":
+        store.audit(
+            "visibility_review",
+            {
+                "observation_id": obs.observation_id,
+                "full_body": False,
+                "reviewer": "offline-test",
+                "evidence": "synthetic-rejection",
+            },
+            NOW.timestamp(),
+        )
+    engine = IdentityEngine(
+        store,
+        settings(IDENTITY_MODE="per_observation", SOURCE_REFERENCE_POLICY="best_effort_partial"),
+        FrozenClock(NOW),
+    )
+    result = engine.process(obs, facts, (feature(),))
+    assert result.outcome == "uncertain" and result.dog_id is None
+    evidence = json.loads(
+        store.db.execute("SELECT payload FROM audit WHERE code='identity_decision'").fetchone()[0]
+    )
+    assert evidence["partial_reference_used"] is False
+    assert store.db.execute("SELECT count(*) FROM dogs").fetchone()[0] == 0
+    assert not obs.crops[0].full_body
+    store.close()
+
+
+@pytest.mark.parametrize("mode", ["shadow", "calibrated_auto"])
+def test_partial_policy_cannot_bypass_full_body_in_recognition_modes(tmp_path, mode):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "other-mode-" + mode)
+    obs = replace(obs, crops=(replace(obs.crops[0], full_body=False),))
+    persist(store, obs)
+    engine = IdentityEngine(
+        store,
+        settings(IDENTITY_MODE=mode, SOURCE_REFERENCE_POLICY="best_effort_partial"),
+        FrozenClock(NOW),
+        calibration=calibration(),
+    )
+    result = engine.process(obs, description(), (feature(),))
+    assert result.outcome == "uncertain"
+    assert result.abstention_reason == "full-body visibility not verified"
+    assert store.db.execute("SELECT count(*) FROM dogs").fetchone()[0] == 0
+    store.close()
+
+
+@pytest.mark.parametrize("policy", [None, "full_body", "best_effort", "BEST_EFFORT_PARTIAL"])
+def test_partial_reference_requires_exact_explicit_policy(tmp_path, policy):
+    store = Store(tmp_path / "db.sqlite")
+    obs = observation(tmp_path, "strict-source-policy")
+    obs = replace(obs, crops=(replace(obs.crops[0], full_body=False),))
+    persist(store, obs)
+    selected = {} if policy is None else {"SOURCE_REFERENCE_POLICY": policy}
+    engine = IdentityEngine(
+        store, settings(IDENTITY_MODE="per_observation", **selected), FrozenClock(NOW)
+    )
+    assert engine.process(obs, description(), (feature(),)).outcome == "uncertain"
+    store.close()

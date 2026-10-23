@@ -11,7 +11,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def harness(
-    tmp_path, *, upgrade=False, fail_verify=False, fail_restart=False, secrets_symlink=False
+    tmp_path,
+    *,
+    upgrade=False,
+    fail_verify=False,
+    fail_restart=False,
+    secrets_symlink=False,
+    argv_delay=0,
+    bad_pid=False,
+    inactive=False,
 ):
     virtual = tmp_path / "host"
     app = virtual / "opt/dog-art"
@@ -114,18 +122,25 @@ elif name=='systemctl':
     link.unlink(missing_ok=True)
  if a[0]=='is-enabled':print('enabled' if os.environ['UPGRADE']=='1' else 'disabled');sys.exit(0 if os.environ['UPGRADE']=='1' else 1)
  if a[0]=='is-active':
+  if '--quiet' in a and os.environ['INACTIVE']=='1':sys.exit(3)
   if '--quiet' not in a:print('active' if os.environ['UPGRADE']=='1' else 'inactive')
   sys.exit(0 if '--quiet' in a or os.environ['UPGRADE']=='1' else 3)
  if a[0]=='restart':
   if os.environ.get('FAIL_RESTART')=='1':sys.exit(1)
   release=(v/'opt/dog-art/current').resolve();p=v/'proc/123';p.mkdir(parents=True,exist_ok=True)
   (p/'cmdline').write_bytes(b'python\\0'+str(release/'venv/bin/dog-art').encode()+b'\\0')
- if a[0]=='show':print('123')
+ if a[0]=='show':
+  countfile=v/'show-count';count=int(countfile.read_text())+1 if countfile.exists() else 1;countfile.write_text(str(count))
+  release=(v/'opt/dog-art/current').resolve();p=v/'proc/123'
+  (p/'cmdline').write_bytes((b'systemd-pre-exec' if count<=int(os.environ['ARGV_DELAY']) else b'python\\0'+str(release/'venv/bin/dog-art').encode())+b'\\0')
+  print('0' if os.environ['BAD_PID']=='1' else '123')
+elif name=='sleep':pass
 else:raise AssertionError(name)
 """
     )
     mock.chmod(0o755)
     for name in (
+        "sleep",
         "mv",
         "id",
         "hostname",
@@ -151,6 +166,9 @@ else:raise AssertionError(name)
         "UPGRADE": str(int(upgrade)),
         "FAIL_VERIFY": str(int(fail_verify)),
         "FAIL_RESTART": str(int(fail_restart)),
+        "ARGV_DELAY": str(argv_delay),
+        "BAD_PID": str(int(bad_pid)),
+        "INACTIVE": str(int(inactive)),
     }
     result = subprocess.run(
         ["/bin/sh", str(installer), str(delivery), "a" * 40],
@@ -256,3 +274,26 @@ def test_provisioning_rejects_directory_and_secrets_symlinks(tmp_path, symlink_t
     assert result.returncode != 0 and "symlink forbidden" in result.stdout
     assert (unrelated / "sentinel").read_text() == "preserve"
     assert list(unrelated.iterdir()) == [unrelated / "sentinel"]
+
+
+def test_promotion_waits_for_transient_pre_exec_command_line(tmp_path):
+    r, app, units, log = harness(tmp_path, argv_delay=3)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert log.count("systemctl show dog-art.service") == 5
+    assert "Type=exec" in (units / "dog-art.service").read_text()
+
+
+@pytest.mark.parametrize("failure", ["argv", "pid", "inactive"])
+def test_persistent_process_verification_failure_rolls_back_with_stage(tmp_path, failure):
+    r, app, units, log = harness(
+        tmp_path,
+        argv_delay=99 if failure == "argv" else 0,
+        bad_pid=failure == "pid",
+        inactive=failure == "inactive",
+    )
+    assert r.returncode != 0
+    assert "Promotion failed during stable-running-release" in r.stderr
+    assert "20 checks" in r.stderr
+    assert not (app / "current").exists()
+    assert not (units / "dog-art.service").exists()
+    assert log.count("systemctl show dog-art.service") == 20

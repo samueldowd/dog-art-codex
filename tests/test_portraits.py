@@ -1,4 +1,5 @@
 import base64
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -191,4 +192,26 @@ def test_saved_portrait_replay_needs_no_new_facts_key_or_generation_permission(t
         result["new_request"] is False and result["state"] == "validated" and len(fake.calls) == 1
     )
     assert store.db.execute("SELECT count(*) FROM requests").fetchone()[0] == 1
+    store.close()
+
+
+def test_partial_source_prompt_and_saved_quality_preserve_unknowns(tmp_path):
+    service, store, fake = setup(tmp_path)
+    description = DogDescription(
+        coat_colors=("black", "white"),
+        markings="white lower legs",
+        occluded_areas=("face", "chest"),
+        uncertainty=("chest markings unknown",),
+    )
+    result = service.generate("dog1", description, reserve_usd=1, build_scope="test-build")
+    assert result["state"] == "needs_review"
+    call = fake.calls[0]
+    assert "Full-body pose completion is an artistic interpretation" in call["prompt"]
+    assert '"muzzle": null' in call["prompt"]
+    assert "white lower legs" in call["prompt"]
+    qa = json.loads(Path(result["path"]).with_suffix(".qa.json").read_text())
+    assert qa["source_reference_policy"] == "best_effort_partial"
+    assert qa["occluded_source_areas"] == ["face", "chest"]
+    assert qa["source_limitations"] == ["chest markings unknown"]
+    assert call["image"][1] == (ROOT / "assets/style/dog-watercolor-transparent.png").read_bytes()
     store.close()

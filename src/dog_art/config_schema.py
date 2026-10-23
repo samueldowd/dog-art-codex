@@ -32,6 +32,7 @@ SCHEMAS = {
         "LOCAL_IMAGE_ENCODER": "string",
         "LOCAL_ENCODER_DEVICE": "string",
         "IDENTITY_MODE": "string",
+        "SOURCE_REFERENCE_POLICY": "string",
         "IDENTITY_MATCH_THRESHOLD": "number",
         "IDENTITY_NEW_THRESHOLD": "number",
         "IDENTITY_SCORE_MARGIN": "number",

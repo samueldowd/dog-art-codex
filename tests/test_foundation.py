@@ -133,3 +133,33 @@ def test_crash_before_submission_releases_concurrency_without_replaying(tmp_path
     _, created = ledger.reserve("second", "d", {}, "2026-10-22", 1, **kwargs)
     assert created
     store.close()
+
+
+def test_partial_reference_policy_is_explicit_and_only_per_observation(tmp_path):
+    app = tmp_path / "app.toml"
+    text = (ROOT / "config/app.toml").read_text()
+    app.write_text(text)
+    assert (
+        load_settings(app, tmp_path / ".env", environ={}).get("SOURCE_REFERENCE_POLICY")
+        == "best_effort_partial"
+    )
+    app.write_text(
+        text.replace(
+            'SOURCE_REFERENCE_POLICY = "best_effort_partial"',
+            'SOURCE_REFERENCE_POLICY = "anything"',
+        )
+    )
+    with pytest.raises(ConfigError, match="SOURCE_REFERENCE_POLICY"):
+        load_settings(app, tmp_path / ".env", environ={})
+    app.write_text(
+        text.replace('IDENTITY_MODE = "per_observation"', 'IDENTITY_MODE = "calibrated_auto"')
+    )
+    with pytest.raises(ConfigError, match="partial references require per_observation"):
+        load_settings(app, tmp_path / ".env", environ={})
+    app.write_text(text.replace('SOURCE_REFERENCE_POLICY = "best_effort_partial"', ""))
+    assert (
+        load_settings(app, tmp_path / ".env", environ={}).get(
+            "SOURCE_REFERENCE_POLICY", "full_body"
+        )
+        == "full_body"
+    )
