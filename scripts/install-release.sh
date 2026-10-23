@@ -19,15 +19,15 @@ release=/opt/dog-art/releases/0.1.0-$revision
 [ ! -e "$release" ] || { echo 'Release exists; inspect before reuse'; exit 1; }
 for p in /opt/dog-art /etc/dog-art /var/lib/dog-art; do [ ! -L "$p" ] || { echo 'Unexpected symlink'; exit 1; }; done
 getent passwd dog-art >/dev/null
-# Python spawn must inherit a directory traversable by the dedicated user.
-cd /var/lib/dog-art
+# Root imports must not search the application-writable cwd; / is safe for spawn.
+cd /
 install -d -o root -g dog-art -m 0750 "$release"
-python3 -m venv "$release/venv"
-"$release/venv/bin/python" -m pip install --no-cache-dir --require-hashes -r "$delivery/requirements.lock"
+python3 -I -m venv "$release/venv"
+"$release/venv/bin/python" -I -m pip install --no-cache-dir --require-hashes -r "$delivery/requirements.lock"
 set -- "$delivery"/wheel/*.whl
 [ "$#" -eq 1 ] || { echo 'Exactly one runtime wheel required'; exit 1; }
-"$release/venv/bin/python" -m pip install --no-cache-dir --no-deps "$1"
-"$release/venv/bin/python" -m compileall -q "$release/venv/lib"
+"$release/venv/bin/python" -I -m pip install --no-cache-dir --no-deps "$1"
+"$release/venv/bin/python" -I -m compileall -q "$release/venv/lib"
 chgrp -R dog-art "$release"
 chmod -R g+rX,o-rwx "$release"
 if [ ! -e /etc/dog-art/app.toml ]; then install -o root -g dog-art -m 0640 "$delivery/config/app.toml.example" /etc/dog-art/app.toml; fi
@@ -130,7 +130,7 @@ done
 promotion_step=timer-active
 systemctl is-active --quiet dog-art-reset.timer
 promotion_step=installed-import
-runuser -u dog-art -- "$release/venv/bin/python" -c 'import dog_art; print("Installed import:", dog_art.__file__)'
+runuser -u dog-art -- "$release/venv/bin/python" -I -c 'import dog_art; print("Installed import:", dog_art.__file__)'
 promotion_step=timer-schedule
 systemctl list-timers dog-art-reset.timer --no-pager
 promoting=0

@@ -218,6 +218,9 @@ class Publisher:
                 for k in ("uploaded_at", "replaced_at", "verified_at"):
                     payload[k] = payload[k].isoformat()
                 with self.store.transaction() as db:
+                    # Bind the receipt to the same committed readiness snapshot.
+                    # A local approval can finish after readback revalidation.
+                    guard.revalidate(db=db)
                     db.execute(
                         "INSERT INTO publications VALUES(?,?,?)",
                         (

@@ -187,6 +187,9 @@ COLLAGE_BACKGROUND = "#F3EBDD"
 # KNOWN: Requested randomly placed dogs; implement seeded layout and collision checks.
 # TYPE: string
 COLLAGE_LAYOUT = "scattered"
+# KNOWN: Show approved portraits as ready, retaining all pending appearances.
+# TYPE: string
+COLLAGE_PORTRAIT_POLICY = "approved_only"
 # DEFAULT: Output safe margin, adjustable with visual evidence.
 # TYPE: integer
 COLLAGE_MARGIN_PX = 40

@@ -158,6 +158,20 @@ class Store:
         )
 
     def status(self):
+        current = self.db.execute("SELECT value FROM meta WHERE key='current_day'").fetchone()
+        day = current[0] if current else None
+        groups = self.db.execute(
+            "SELECT CASE WHEN EXISTS(SELECT 1 FROM portraits p WHERE p.dog_id=m.dog_id "
+            "AND p.state='validated') THEN 'validated' ELSE coalesce((SELECT state "
+            "FROM portraits p WHERE p.dog_id=m.dog_id ORDER BY rowid LIMIT 1),"
+            "'not_requested') END AS state,count(*) FROM membership m WHERE day=? GROUP BY 1",
+            (day,),
+        ).fetchall()
+        pending = {r[0]: r[1] for r in groups if r[0] != "validated"}
+        approved = sum(r[1] for r in groups if r[0] == "validated")
+        paid = self.db.execute(
+            "SELECT count(*),coalesce(sum(reserved_usd),0) FROM requests WHERE day=?", (day,)
+        ).fetchone()
         return {
             "schema": SCHEMA_VERSION,
             "jobs": {
@@ -174,9 +188,12 @@ class Store:
                 r[0]: r[1]
                 for r in self.db.execute("SELECT state,count(*) FROM requests GROUP BY state")
             },
-            "current_day": self.db.execute(
-                "SELECT value FROM meta WHERE key='current_day'"
-            ).fetchone()[0]
-            if self.db.execute("SELECT 1 FROM meta WHERE key='current_day'").fetchone()
-            else None,
+            "current_day": day,
+            "display": {
+                "accepted_appearances": approved + sum(pending.values()),
+                "approved_portraits": approved,
+                "pending_portraits": sum(pending.values()),
+                "pending_states": pending,
+            },
+            "paid_today": {"calls": paid[0], "reserved_usd": paid[1]},
         }

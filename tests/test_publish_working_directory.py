@@ -11,11 +11,11 @@ ROOT = Path(__file__).parents[1]
 
 def test_activation_and_services_choose_application_owned_working_directory():
     template = (ROOT / "scripts/activate-live.template.sh").read_text()
-    assert template.index("cd /var/lib/dog-art") < template.index(
+    assert template.index("cd /") < template.index(
         '/bin/sh "$protected/scripts/install-release.sh"'
     )
     installer = (ROOT / "scripts/install-release.sh").read_text()
-    assert installer.index("cd /var/lib/dog-art") < installer.index("runuser -u dog-art")
+    assert installer.index("cd /") < installer.index("runuser -u dog-art")
     for name in ("dog-art.service", "dog-art-reset.service"):
         assert "WorkingDirectory=/var/lib/dog-art" in (ROOT / "deploy/systemd" / name).read_text()
 

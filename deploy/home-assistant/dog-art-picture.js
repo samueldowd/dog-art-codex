@@ -14,6 +14,7 @@
   const FETCH_TIMEOUT_MS = 10000;
   const IMAGE_TIMEOUT_MS = 10000;
   const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+  const READINESS_RETRY_MS = 5000;
 
   class DogArtPicture extends HTMLElement {
     constructor() {
@@ -102,11 +103,12 @@
           ? value.connected : typeof callWS === "function";
       const previous = this._transport;
       const unchanged = previous && previous.connection === connection &&
-        previous.callWS === callWS && previous.connected === connected;
+        previous.connected === connected &&
+        (connection || previous.callWS === callWS);
       this._hass = value;
       this._transport = { connection, callWS, connected };
       // hass state objects are replaced on unrelated entity updates. A stable
-      // connection/callWS transport must not abort fetch or image decoding.
+      // connection must not abort fetch/decoding when HA rebinds callWS.
       if (unchanged) return;
       this._invalidate();
       this._nextDue = 0;
@@ -133,9 +135,13 @@
     getCardSize() { return 3; }
 
     _ready() {
+      const value = this._hass;
+      const connection = value && value.connection;
+      const connected = typeof (connection && connection.connected) === "boolean"
+        ? connection.connected : typeof (value && value.connected) === "boolean"
+          ? value.connected : typeof (value && value.callWS) === "function";
       return this._attached && !document.hidden && this._config &&
-        this._hass && typeof this._hass.callWS === "function" &&
-        this._transport && this._transport.connected;
+        value && typeof value.callWS === "function" && connected;
     }
 
     _invalidate() {
@@ -149,7 +155,17 @@
     _scheduleDue() {
       if (this._timer !== null) clearTimeout(this._timer);
       this._timer = null;
-      if (!this._ready()) return;
+      if (!this._ready()) {
+        // Connection readiness can change without a new hass assignment.
+        // Poll only the visible configured card; no network call until ready.
+        if (this._attached && !document.hidden && this._config) {
+          this._timer = setTimeout(() => {
+            this._timer = null;
+            this._scheduleDue();
+          }, READINESS_RETRY_MS);
+        }
+        return;
+      }
       this._timer = setTimeout(() => {
         this._timer = null;
         void this._refresh();
@@ -246,7 +262,10 @@
     }
 
     async _refresh() {
-      if (!this._ready()) return;
+      if (!this._ready()) {
+        this._scheduleDue();
+        return;
+      }
       if (this._attempt || this._pendingOperations) {
         // callWS has no abort API. A timed-out unresolved call must settle
         // before another begins, including after config/hass reconnection.
@@ -308,7 +327,7 @@
         }
         if (attempt.objectUrl) URL.revokeObjectURL(attempt.objectUrl);
         if (this._attempt === attempt) this._attempt = null;
-        if (this._ready()) this._scheduleDue();
+        this._scheduleDue();
       }
     }
   }

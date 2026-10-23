@@ -33,3 +33,11 @@ Focused local screenshots and prior-card rollback JSON remain in ignored .work; 
 ## Remaining live gates
 
 Current eedac73 shadow worker and persistent midnight timer are active. Final recovery/QA source requires a versioned native upgrade through normal sudo. Actual hardened restart, installed reset action and operational recovery window remain unperformed. Controlled display blank/restore does not claim a natural midnight or production-catalog reset. Native PTZ record/detect lens acceptance remains blocked by the user's preserved wide recording. Returning-dog recognition/physical duplicate prevention are explicitly deferred, not passing gates.
+
+## Installed34ac operation and approved-ready decision — 2026-10-22
+
+After user-authorized core_samba restart restored signed/encrypted reads, normal authenticated installed-release resumption passed: hardened helper blank/restore/old-day guard/5retainedfiles/refusedtransportmetadatarecovery, actual production reset, reviewed original portrait acceptance, two shadow restarts, and120second ongoing live observation. Independent public systemd check confirms active dog-art user/NRestarts0/safe cwd/reset Resultsuccess/exit0/timer04:00UTC. The helper made no paid request. Ongoing generation/publication are enabled under$5/day12calls.
+
+Protected read-only report02:28:59UTC:8accepted appearances,5validated portraits,2needs_review(confirmed_facts_matchfalse/null; no automatic override),1PortraitBudgetWait;7requests reserve$5includingoriginal$2buildreservation. One technical localQA retry ended in a completed ambiguous hold; no second paid request for that recipe. These additional6requests are authorized ongoing work, distinct from the single controlled build test. Exact opaque cream collage6600c7a52f34193bdecba563976dffd2ff4f35ed67f083794d8d74868a209d53 remains published because34ac waits for all8portraits.
+
+User explicitly approved displaying approved portraits as they become ready while preserving pending appearances, QA and budgets. That policy is now being implemented; neither its deployment nor a new production five-dog dashboard image is claimed until actual verification.

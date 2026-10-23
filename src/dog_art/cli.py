@@ -252,12 +252,15 @@ def main(argv=None):
             elif args.command == "rollover":
                 day = pipe.daily.reconcile()
                 ready = pipe.store.db.execute(
-                    "SELECT 1 FROM collages WHERE day=? AND revision=?",
+                    "SELECT payload FROM collages WHERE day=? AND revision=?",
                     (day.day, day.revision),
                 ).fetchone()
                 result = {
                     "day": asdict(day),
-                    "composition_pending": ready is None,
+                    "composition_pending": ready is None
+                    or bool(json.loads(ready[0]).get("pending_dog_ids")),
+                    "render_pending": ready is None,
+                    "display": pipe.store.status()["display"],
                     "publication": pipe.publish_latest(),
                 }
             elif args.command == "review":

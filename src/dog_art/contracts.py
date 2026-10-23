@@ -123,6 +123,8 @@ class CollageRevision:
     output_path: Path
     sha256: str
     created_at: datetime
+    pending_dog_ids: tuple[str, ...] = ()
+    portrait_policy: str = "all_accepted"
 
 
 @dataclass(frozen=True)

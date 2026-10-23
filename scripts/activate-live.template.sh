@@ -7,7 +7,7 @@ build=/home/chatgpt/dog-art-build
 revision=@REV@
 protected=/opt/dog-art/staging/$revision
 archive=$build/dog-art-delivery-0.1.0-@SHORT@.tar.gz
-python3 - <<'GUARD'
+python3 -I - <<'GUARD'
 from pathlib import Path
 for raw in ('/opt/dog-art/staging','/var/lib/dog-art/acceptance','/etc/systemd/system/dog-art.service.d'):
  p=Path(raw)
@@ -15,8 +15,8 @@ for raw in ('/opt/dog-art/staging','/var/lib/dog-art/acceptance','/etc/systemd/s
   assert not q.is_symlink()
   if q.exists():assert q.is_dir()
 GUARD
-# Dedicated-user subprocesses must not inherit the SSH account's private home.
-cd /var/lib/dog-art
+# Root imports use isolated Python; / is also traversable by the dedicated user.
+cd /
 [ ! -e "$protected" ] && [ ! -L "$protected" ]
 [ -f "$archive" ] && [ ! -L "$archive" ]
 [ ! -e /etc/systemd/system/dog-art.service.d/10-dog-art-mode.conf ]
@@ -41,7 +41,7 @@ restore() {
   systemctl stop dog-art.service || true
   checkpoint=/var/lib/dog-art/acceptance/operations-$revision
   if [ -f "$checkpoint/display-checkpoint.json" ]; then
-   runuser -u dog-art -- "$release/venv/bin/python" "$release/verify-installed.py" --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env --sandbox "$checkpoint" --restore-only || echo "Owned display restoration BLOCKED; preserve $checkpoint/display-checkpoint.json and rerun the same --restore-only command after SMB recovery." >&2
+   runuser -u dog-art -- "$release/venv/bin/python" -I "$release/verify-installed.py" --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env --sandbox "$checkpoint" --restore-only || echo "Owned display restoration BLOCKED; preserve $checkpoint/display-checkpoint.json and rerun the same --restore-only command after SMB recovery." >&2
   fi
   if [ "$promoting" -eq 1 ]; then
    install -o root -g dog-art -m 0640 "$backup" /etc/dog-art/app.toml
@@ -55,7 +55,7 @@ restore() {
 trap restore EXIT
 trap 'exit 130' HUP INT TERM
 systemctl stop dog-art.service dog-art-reset.timer
-portrait=$(runuser -u dog-art -- "$release/venv/bin/python" - <<'PORTRAIT'
+portrait=$(runuser -u dog-art -- "$release/venv/bin/python" -I - <<'PORTRAIT'
 from pathlib import Path
 from dog_art.settings import load_settings
 from dog_art.storage import Store
@@ -78,7 +78,7 @@ systemd-run --quiet --wait --pipe --collect --unit "dog-art-acceptance-@SHORT@" 
  --property=ReadWritePaths=/var/lib/dog-art \
  --property='RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6' \
  --property=MemoryMax=900M --property=CPUQuota=80% --property=RuntimeMaxSec=300 \
- "$release/venv/bin/python" "$release/verify-installed.py" \
+ "$release/venv/bin/python" -I "$release/verify-installed.py" \
  --config /etc/dog-art/app.toml --secrets-file /etc/dog-art/.env \
  --sandbox "/var/lib/dog-art/acceptance/operations-$revision" \
  --portrait "$portrait" --portrait-sha256 0cad9b03b90c1e9a9260d18f1d15d02dfcb3e495046c5319eaf07d8160c572dd \
@@ -87,7 +87,7 @@ systemd-run --quiet --wait --pipe --collect --unit "dog-art-acceptance-@SHORT@" 
 [ ! -e "$backup" ] && [ ! -L "$backup" ]
 install -o root -g root -m 0600 /etc/dog-art/app.toml "$backup"
 promoting=1
-python3 - <<'RESET_POLICY'
+python3 -I - <<'RESET_POLICY'
 import grp,os,re,tomllib
 from pathlib import Path
 p=Path('/etc/dog-art/app.toml');assert not p.is_symlink()
@@ -105,7 +105,7 @@ systemctl start dog-art-reset.service
 [ "$(systemctl show dog-art-reset.service -p Result --value)" = success ]
 acceptance_step=accept-reviewed-bytes
 # Accept only the one already human-reviewed output; no generation/API call here.
-runuser -u dog-art -- "$release/venv/bin/python" - <<'ACCEPT'
+runuser -u dog-art -- "$release/venv/bin/python" -I - <<'ACCEPT'
 from pathlib import Path
 from dog_art.clock import Clock
 from dog_art.portraits import PortraitService
@@ -132,7 +132,7 @@ for attempt in 1 2; do
 done
 systemctl stop dog-art.service
 acceptance_step=ongoing-live-promotion
-python3 - <<'POLICY'
+python3 -I - <<'POLICY'
 import grp,os,re,tomllib
 from pathlib import Path
 p=Path('/etc/dog-art/app.toml');assert not p.is_symlink()
@@ -176,7 +176,7 @@ for sample in 1 2 3 4 5 6 7 8; do
  esac
 done
 # Aggregate-only operational evidence: no source images, descriptions or secrets.
-runuser -u dog-art -- "$release/venv/bin/python" - <<'OBSERVATION'
+runuser -u dog-art -- "$release/venv/bin/python" -I - <<'OBSERVATION'
 import json
 from pathlib import Path
 from dog_art.clock import Clock

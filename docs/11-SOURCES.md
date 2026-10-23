@@ -46,3 +46,5 @@ Prefer the installed service's supported API and the official SDK interface. Rec
 
 No live image price, current account model entitlement, user's Frigate release, Ollama model tag, CT112 OS version, Samba configuration or Home Assistant slideshow implementation has been verified by authoring this document.
 
+
+Frontend lifecycle continuation references: [official custom-card contract](https://contributors.home-assistant.io/frontend/custom-ui/card/), [HA card host](https://github.com/home-assistant/frontend/blob/dev/src/panels/lovelace/cards/hui-card.ts), [official WebSocket connection](https://github.com/home-assistant/home-assistant-js-websocket/blob/master/lib/connection.ts). These document mutable connection readiness and hass assignment; actual foreground DOM/image verification remains the acceptance evidence.

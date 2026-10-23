@@ -70,6 +70,8 @@ def write_receipt(revision: CollageRevision):
 
 def load_revision(path: Path) -> CollageRevision:
     """Verify an immutable archive and read its adjacent layout receipt."""
+    if path.is_symlink() or path.with_suffix(".json").is_symlink():
+        raise ImmutableArchiveError("archive/receipt symlink forbidden")
     value = json.loads(path.with_suffix(".json").read_text())
     if value.get("renderer_version") != "pillow-scattered-v1":
         raise ImmutableArchiveError("unsupported renderer receipt")
@@ -94,6 +96,8 @@ def load_revision(path: Path) -> CollageRevision:
         placements=tuple(value["placements"]),
         output_path=path,
         created_at=utc(datetime.fromisoformat(value["created_at"])),
+        pending_dog_ids=tuple(value.get("pending_dog_ids", ())),
+        portrait_policy=value.get("portrait_policy", "all_accepted"),
     )
 
 
@@ -155,6 +159,8 @@ class CollageRenderer:
         seed: int,
         output_path: Path,
         created_at: datetime,
+        pending_dog_ids: tuple[str, ...] = (),
+        portrait_policy: str = "all_accepted",
     ) -> CollageRevision:
         """Create a PNG + JSON archive. Existing outputs are never overwritten.
 
@@ -162,12 +168,19 @@ class CollageRenderer:
         meet the minimum height. The caller retains its previous valid revision.
         """
         utc(created_at)
+        if portrait_policy not in {"all_accepted", "approved_only"}:
+            raise ValueError("unsupported portrait policy")
         if type(seed) is not int or type(revision) is not int or revision < 0:
             raise ValueError("integer seed and nonnegative revision required")
         output_path = Path(output_path)
         if output_path.exists() or output_path.with_suffix(".json").exists():
             raise ImmutableArchiveError("archive already exists; choose a new revision")
         ids = tuple(sorted(portraits))
+        pending_dog_ids = tuple(sorted(pending_dog_ids))
+        if pending_dog_ids and portrait_policy != "approved_only":
+            raise ValueError("pending artwork requires the approved_only policy")
+        if len(set(pending_dog_ids)) != len(pending_dog_ids) or set(ids) & set(pending_dog_ids):
+            raise ValueError("ready and pending identities must be unique and disjoint")
         images, boxes, sizes, hashes = {}, {}, {}, {}
         for dog_id in ids:
             path = Path(portraits[dog_id])
@@ -258,6 +271,8 @@ class CollageRenderer:
             output_path,
             hashlib.sha256(png.getvalue()).hexdigest(),
             utc(created_at),
+            pending_dog_ids=pending_dog_ids,
+            portrait_policy=portrait_policy,
         )
         # Create-only writes preserve every prior archive and caller's output.
         _write_new(output_path, png.getvalue())

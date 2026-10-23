@@ -94,75 +94,98 @@ class PublicationGuard:
         self.manager, self.revision = manager, revision
         self.active = True
 
-    def revalidate(self):
-        """Raise StalePublication unless this is the current desired archive."""
+    def revalidate(self, *, db=None):
+        """Check publication against current inputs, optionally inside receipt tx.
+
+        The db form never opens a transaction or renders rollover state. The
+        publisher uses it inside its receipt write transaction, serializing the
+        last approval/readiness check with committing the verified receipt.
+        """
         if not self.active:
             raise StalePublication("publication guard is no longer held")
         m, r = self.manager, self.revision
-        current = m._rollover_locked()
-        # Rollover materializes a current-generation blank independently of
-        # today's portraits, including a sighting that beat the reset timer.
-        if current.day != r.day:
-            raise StalePublication("wall date changed; new-day output queued")
-        with m.store.transaction() as db:
-            current = m._normalize_locked(current.day, db)
-            row = db.execute(
-                "SELECT * FROM collages WHERE day=? AND revision=?", (r.day, r.revision)
+        if db is None:
+            current = m._rollover_locked()
+            if current.day != r.day:
+                raise StalePublication("wall date changed; new-day output queued")
+            with m.store.transaction() as connection:
+                return self.revalidate(db=connection)
+        if m._today() != r.day:
+            raise StalePublication("wall date changed before publication receipt")
+        current = m._normalize_locked(r.day, db)
+        row = db.execute(
+            "SELECT * FROM collages WHERE day=? AND revision=?", (r.day, r.revision)
+        ).fetchone()
+        outbox = db.execute(
+            "SELECT * FROM outbox WHERE day=? AND revision=?", (r.day, r.revision)
+        ).fetchone()
+        reset_waiting = (
+            db.execute(
+                "SELECT 1 FROM outbox WHERE day=? AND generation=? AND revision=0 AND state='reset_pending'",
+                (current.day, current.generation),
             ).fetchone()
-            outbox = db.execute(
-                "SELECT * FROM outbox WHERE day=? AND revision=?", (r.day, r.revision)
-            ).fetchone()
-            reset_waiting = (
-                db.execute(
-                    "SELECT 1 FROM outbox WHERE day=? AND generation=? AND revision=0 AND state='reset_pending'",
-                    (current.day, current.generation),
-                ).fetchone()
-                is not None
-            )
-            bound = (
-                current.generation == r.generation
-                and row is not None
-                and outbox is not None
-                and row["generation"] == r.generation
-                and outbox["generation"] == r.generation
-                and row["sha256"] == r.sha256
-                and outbox["sha256"] == r.sha256
-                and row["path"] == str(r.output_path)
-            )
-            reset = (
-                bound
-                and r.revision == 0
-                and r.dog_ids == ()
-                and r.portrait_hashes == ()
-                and outbox["state"] == "reset_pending"
-                and not m._has_verified_publication(current, db)
-                and json.loads(row["payload"])["dog_ids"] == []
-                and json.loads(row["payload"])["portrait_hashes"] == []
-            )
-            empty_retry = (
-                bound
-                and r.revision == 0
-                and r.dog_ids == ()
-                and r.portrait_hashes == ()
-                and outbox["state"] == "published"
-                and not m._has_verified_full_publication(current, db)
-                and json.loads(row["payload"])["dog_ids"] == []
-                and json.loads(row["payload"])["portrait_hashes"] == []
-            )
-            desired = (
-                bound
-                and not reset_waiting
-                and (r.revision != 0 or empty_retry)
-                and current.revision == r.revision
-                and current.dog_ids == r.dog_ids
-                and outbox["state"] in {"pending", "publishing", "published"}
-            )
-            if not (reset or desired):
-                raise StalePublication(
-                    "generation/revision/membership is obsolete or reset pending"
-                )
+            is not None
+        )
+        bound = (
+            current.generation == r.generation
+            and row is not None
+            and outbox is not None
+            and row["generation"] == r.generation
+            and outbox["generation"] == r.generation
+            and row["sha256"] == r.sha256
+            and outbox["sha256"] == r.sha256
+            and row["path"] == str(r.output_path)
+        )
+        reset = (
+            bound
+            and r.revision == 0
+            and r.dog_ids == ()
+            and r.portrait_hashes == ()
+            and r.pending_dog_ids == ()
+            and r.portrait_policy == "all_accepted"
+            and outbox["state"] == "reset_pending"
+            and not m._has_verified_publication(current, db)
+            and json.loads(row["payload"])["dog_ids"] == []
+            and json.loads(row["payload"])["portrait_hashes"] == []
+        )
+        empty_retry = (
+            bound
+            and r.revision == 0
+            and r.dog_ids == ()
+            and r.portrait_hashes == ()
+            and r.pending_dog_ids == ()
+            and r.portrait_policy == "all_accepted"
+            and outbox["state"] == "published"
+            and not m._has_verified_full_publication(current, db)
+            and json.loads(row["payload"])["dog_ids"] == []
+            and json.loads(row["payload"])["portrait_hashes"] == []
+        )
+        metadata = m._inputs_metadata(current, db)
+        ready_ids = (
+            tuple(item[0] for item in metadata["ready"])
+            if m.portrait_policy == "approved_only"
+            else current.dog_ids
+        )
+        pending_ids = tuple(metadata["pending"]) if m.portrait_policy == "approved_only" else ()
+        desired = (
+            bound
+            and not reset_waiting
+            and (r.revision != 0 or empty_retry)
+            and current.revision == r.revision
+            and ready_ids == r.dog_ids
+            and pending_ids == r.pending_dog_ids
+            and r.portrait_policy == (m.portrait_policy if r.revision else "all_accepted")
+            and outbox["state"] in {"pending", "publishing", "published"}
+        )
+        if desired and not (reset or empty_retry):
+            _, hashes, checked_pending = m._portrait_inputs(current, db)
+            desired = hashes == r.portrait_hashes and checked_pending == r.pending_dog_ids
+        if not (reset or desired):
+            raise StalePublication("generation/revision/membership is obsolete or reset pending")
         if sha256(r.output_path) != r.sha256:
             raise StalePublication("local archived bytes changed")
+        if m._today() != r.day:
+            raise StalePublication("wall date changed during publication validation")
         return r
 
 
@@ -170,9 +193,10 @@ class DailyManager:
     """Resolve event timestamps into durable day sets and immutable RGB collages.
 
     Integration: record_sighting(canonical_id, observation timestamps), then build
-    each returned day after validated portraits are available. reconcile() is the
-    same idempotent startup/timer operation and materializes the current revision.
-    Missing portraits/capacity raise while preserving the last valid archive.
+    each returned day according to the configured portrait policy. DayState
+    always retains all accepted membership; approved_only CollageRevision stores
+    ready members and explicit pending_dog_ids. Missing/corrupt approved inputs
+    still hold composition. Startup/timer reconciliation preserves reset priority.
     """
 
     def __init__(self, store, settings, clock):
@@ -182,6 +206,9 @@ class DailyManager:
         self.lock_path = owned_path(self.root, "locks/publication.lock", create_parent=True)
         self.zone = ZoneInfo(settings.get("DAY_TIMEZONE", "America/New_York"))
         self.renderer = CollageRenderer(settings)
+        self.portrait_policy = settings.get("COLLAGE_PORTRAIT_POLICY", "all_accepted")
+        if self.portrait_policy not in {"all_accepted", "approved_only"}:
+            raise ValueError("unsupported collage portrait policy")
 
     def _today(self):
         return utc(self.clock.now()).astimezone(self.zone).date().isoformat()
@@ -257,7 +284,104 @@ class DailyManager:
                 db=db,
             )
             self._queue(self._state(day, db), db)
-        return self._state(day, db)
+        return self._sync_inputs_locked(self._state(day, db), db)
+
+    def _inputs_metadata(self, state, db):
+        """Describe selected approvals without treating bad approved files as pending."""
+        ready, pending = [], []
+        for dog_id in state.dog_ids:
+            row = db.execute(
+                "SELECT recipe_key,path,sha256 FROM portraits WHERE dog_id=? AND state='validated' ORDER BY rowid LIMIT 1",
+                (dog_id,),
+            ).fetchone()
+            if row is None:
+                pending.append(dog_id)
+            else:
+                ready.append((dog_id, row["recipe_key"], row["path"], row["sha256"]))
+        return {
+            "policy": self.portrait_policy,
+            "members": list(state.dog_ids),
+            "ready": ready,
+            "pending": pending,
+            "layout": {
+                key: self.settings.get(key, default)
+                for key, default in (
+                    ("COLLAGE_WIDTH", 1920),
+                    ("COLLAGE_HEIGHT", 1080),
+                    ("COLLAGE_BACKGROUND", "#F3EBDD"),
+                    ("COLLAGE_LAYOUT", "scattered"),
+                    ("COLLAGE_MARGIN_PX", 40),
+                    ("COLLAGE_MIN_DOG_HEIGHT_PX", 120),
+                )
+            },
+        }
+
+    def _sync_inputs_locked(self, state, db):
+        """Bind each revision to approvals/policy even when no new sighting arrives."""
+        inputs = self._inputs_metadata(state, db)
+        signature = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()
+        key = f"collage_inputs:{state.generation}"
+        old = db.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        previous = json.loads(old[0]) if old else None
+        if previous and previous["signature"] == signature:
+            return state
+        existing = db.execute(
+            "SELECT payload FROM collages WHERE day=? AND revision=?",
+            (state.day, state.revision),
+        ).fetchone()
+        path = owned_path(
+            self.root, f"archives/{state.day}/{state.generation}-r{state.revision:08d}.png"
+        )
+        receipt = owned_path(self.root, path.with_suffix(".json").relative_to(self.root).as_posix())
+        payload = (
+            json.loads(existing[0])
+            if existing
+            else (json.loads(receipt.read_text()) if receipt.is_file() else None)
+        )
+        expected_ids = (
+            [r[0] for r in inputs["ready"]]
+            if self.portrait_policy == "approved_only"
+            else list(state.dog_ids)
+        )
+        expected_pending = inputs["pending"] if self.portrait_policy == "approved_only" else []
+        mismatch = payload is not None and (
+            payload["dog_ids"] != expected_ids
+            or payload["portrait_hashes"] != [r[3] for r in inputs["ready"]]
+            or payload.get("pending_dog_ids", []) != expected_pending
+            or payload.get("portrait_policy", "all_accepted") != self.portrait_policy
+        )
+        must_advance = (
+            (previous is not None and state.revision <= previous["revision"])
+            or mismatch
+            or (path.exists() and payload is None)
+            or (previous is not None and payload is not None)
+        )
+        # A new membership revision can bind new inputs without a second bump.
+        # Existing bytes or a policy/approval change on a bound revision cannot.
+        if must_advance:
+            db.execute(
+                "UPDATE days SET desired_revision=desired_revision+1 WHERE day=?", (state.day,)
+            )
+            state = self._state(state.day, db)
+            self._queue(state, db)
+            self.store.audit(
+                "collage_inputs_changed",
+                {
+                    "day": state.day,
+                    "generation": state.generation,
+                    "revision": state.revision,
+                    "policy": self.portrait_policy,
+                    "ready": expected_ids,
+                    "pending": expected_pending,
+                },
+                self.clock.now().timestamp(),
+                db=db,
+            )
+        db.execute(
+            "INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, json.dumps({"signature": signature, "revision": state.revision}, sort_keys=True)),
+        )
+        return state
 
     def _rollover_locked(self):
         today = self._today()
@@ -400,7 +524,7 @@ class DailyManager:
         """Read a snapshot; call reconcile on startup before using this method."""
         with application_lock(self.lock_path):
             with self.store.transaction() as db:
-                return self._state(self._validate_day(day or self._today()), db)
+                return self._normalize_locked(self._validate_day(day or self._today()), db)
 
     def record_sighting(self, dog_id: str, observed_at) -> tuple[DayState, ...]:
         """Add accepted identity by aware event timestamps, never processing time.
@@ -452,12 +576,15 @@ class DailyManager:
             return states
 
     def _portrait_inputs(self, state, db):
-        result, hashes = {}, []
+        result, hashes, pending = {}, [], []
         for dog_id in state.dog_ids:
             row = db.execute(
                 "SELECT path,sha256 FROM portraits WHERE dog_id=? AND state='validated' ORDER BY rowid LIMIT 1",
                 (dog_id,),
             ).fetchone()
+            if row is None and self.portrait_policy == "approved_only":
+                pending.append(dog_id)
+                continue
             if row is None or not row["path"] or not row["sha256"]:
                 raise PortraitPendingError(
                     f"validated portrait pending for accepted identity {dog_id}; all membership retained"
@@ -476,16 +603,22 @@ class DailyManager:
                 )
             result[dog_id] = path
             hashes.append(row["sha256"])
-        return result, tuple(hashes)
+        return result, tuple(hashes), tuple(pending)
 
     def _render_locked(self, day):
         with self.store.transaction() as db:
             state = self._normalize_locked(day, db)
-            portraits, expected_hashes = self._portrait_inputs(state, db)
+            portraits, expected_hashes, pending = self._portrait_inputs(state, db)
             existing = db.execute(
                 "SELECT payload FROM collages WHERE day=? AND revision=?", (day, state.revision)
             ).fetchone()
-        revision = self._archive_image(state, portraits, expected_hashes, existing)
+        rendered_state = replace(state, dog_ids=tuple(portraits))
+        policy = (
+            "all_accepted" if state.revision == 0 and not state.dog_ids else self.portrait_policy
+        )
+        revision = self._archive_image(
+            rendered_state, portraits, expected_hashes, existing, pending, policy
+        )
         output = revision.output_path
         with self.store.transaction() as db:
             # Identity corrections can occur independently of the publish lock.
@@ -516,7 +649,15 @@ class DailyManager:
                 )
         return revision
 
-    def _archive_image(self, state, portraits, expected_hashes, existing):
+    def _archive_image(
+        self,
+        state,
+        portraits,
+        expected_hashes,
+        existing,
+        pending=(),
+        portrait_policy="all_accepted",
+    ):
         """Create/recover immutable image bytes without changing membership."""
         output = owned_path(
             self.root,
@@ -544,6 +685,8 @@ class DailyManager:
                     seed=seed,
                     output_path=staging,
                     created_at=self.clock.now(),
+                    pending_dog_ids=pending,
+                    portrait_policy=portrait_policy,
                 )
                 if sha256(output) != recovered.sha256:
                     raise ImmutableArchiveError(
@@ -565,6 +708,8 @@ class DailyManager:
                 or revision.portrait_hashes != expected_hashes
                 or revision.generation != state.generation
                 or revision.revision != state.revision
+                or revision.pending_dog_ids != pending
+                or revision.portrait_policy != portrait_policy
             ):
                 raise ImmutableArchiveError(
                     "archived inputs changed; require a new audited revision"
@@ -579,6 +724,8 @@ class DailyManager:
                 seed=seed,
                 output_path=output,
                 created_at=self.clock.now(),
+                pending_dog_ids=pending,
+                portrait_policy=portrait_policy,
             )
         return revision
 

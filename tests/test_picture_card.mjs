@@ -475,7 +475,10 @@ test("real HA transport disconnection invalidates decoding and reconnect resumes
   h.card.hass = { ...h.hass, states: { unrelated: 1 } };
   staleLoad(); await h.clock.flush();
   assert.equal(h.card._image, original);
-  assert.equal(h.clock.jobs.size, 0);
+  assert.equal(h.clock.jobs.size, 1, "only a local readiness retry remains");
+  const requestsWhileDisconnected = h.state.calls.length;
+  await h.clock.advance(15000);
+  assert.equal(h.state.calls.length, requestsWhileDisconnected, "disconnected retries must not send requests");
   h.hass.connection.connected = true;
   h.card.hass = h.hass;
   h.state.imageMode = "load";
@@ -526,4 +529,71 @@ test("PNG stream requires response MIME, nonempty bytes and a reader; invalid bo
   h.mount(); await h.clock.advance(1);
   assert.equal(h.state.created.length, 0);
   assert.match(h.card._status.textContent, /unavailable/);
+});
+
+test("connection becomes ready without another hass assignment", async () => {
+  const h = harness();
+  h.hass.connection.connected = false;
+  h.mount();
+  await h.clock.advance(15000);
+  assert.equal(h.state.calls.length, 0);
+  assert.equal(h.clock.jobs.size, 1, "one bounded local readiness timer");
+  h.hass.connection.connected = true;
+  await h.clock.advance(5001);
+  assert.equal(h.state.calls.length, 1);
+  assert.equal(h.card._image.naturalWidth, 1920);
+  assert.equal(h.card._status.textContent, "Dog artwork updated.");
+  h.card.disconnectedCallback();
+  assert.equal(h.clock.jobs.size, 0);
+});
+
+test("rebinding callWS on the same connected HA transport preserves pending work", async () => {
+  const h = harness();
+  const pending = deferred();
+  h.setResolve(() => pending.promise);
+  h.mount();
+  await h.clock.advance(0);
+  for (let i = 0; i < 6; i += 1) {
+    h.card.hass = { ...h.hass, callWS: h.hass.callWS.bind(h.hass), states: { unrelated: i } };
+    await h.clock.advance(100);
+  }
+  assert.equal(h.state.calls.length, 1);
+  pending.resolve({ url: MEDIA_PATH });
+  await h.clock.advance(1);
+  assert.equal(h.state.fetches.length, 1);
+  assert.equal(h.card._status.textContent, "Dog artwork updated.");
+  assertOnlyOwnedCalls(h.state);
+});
+
+test("connection drop at scheduled refresh recovers without hass reassignment", async () => {
+  const h = harness(); h.mount(); await h.clock.advance(1);
+  const first = h.card._image;
+  h.hass.connection.connected = false;
+  await h.clock.advance(30000);
+  assert.equal(h.state.calls.length, 1);
+  assert.equal(h.clock.jobs.size, 1);
+  h.hass.connection.connected = true;
+  await h.clock.advance(5001);
+  assert.equal(h.state.calls.length, 2);
+  assert.notEqual(h.card._image, first);
+  h.document.visibility(true);
+  assert.equal(h.clock.jobs.size, 0);
+});
+
+test("connection drop during resolution leaves a recoverable local readiness timer", async () => {
+  const h = harness(); const pending = deferred();
+  h.setResolve(() => pending.promise);
+  h.mount(); await h.clock.advance(0);
+  h.hass.connection.connected = false;
+  pending.resolve({ url: MEDIA_PATH });
+  await h.clock.flush();
+  assert.equal(h.state.fetches.length, 0);
+  assert.equal(h.clock.jobs.size, 1);
+  h.setResolve(() => Promise.resolve({ url: MEDIA_PATH }));
+  h.hass.connection.connected = true;
+  await h.clock.advance(35001);
+  assert.equal(h.state.fetches.length, 1);
+  assert.equal(h.card._status.textContent, "Dog artwork updated.");
+  h.card.disconnectedCallback();
+  assert.equal(h.clock.jobs.size, 0);
 });

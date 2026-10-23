@@ -148,6 +148,11 @@ def load_settings(config: Path, secrets_file: Path, *, environ=None) -> Settings
         raise ConfigError("unsupported IDENTITY_MODE")
     if values.get("PORTRAIT_REVIEW_MODE", "operator") not in ("operator", "local_vlm"):
         raise ConfigError("unsupported PORTRAIT_REVIEW_MODE")
+    if values.get("COLLAGE_PORTRAIT_POLICY", "all_accepted") not in (
+        "all_accepted",
+        "approved_only",
+    ):
+        raise ConfigError("unsupported COLLAGE_PORTRAIT_POLICY")
     reservation = values.get("OPENAI_PORTRAIT_RESERVATION_USD")
     daily_budget = values.get("OPENAI_DAILY_BUDGET_USD")
     if reservation not in (None, "") and (

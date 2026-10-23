@@ -41,7 +41,7 @@ class MemorySMB:
 class Guard:
     stale = False
 
-    def revalidate(self):
+    def revalidate(self, *, db=None):
         if self.stale:
             raise PublishError("stale generation")
 

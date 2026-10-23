@@ -61,6 +61,7 @@ SCHEMAS = {
         "COLLAGE_HEIGHT": "integer",
         "COLLAGE_BACKGROUND": "string",
         "COLLAGE_LAYOUT": "string",
+        "COLLAGE_PORTRAIT_POLICY": "string",
         "COLLAGE_MARGIN_PX": "integer",
         "COLLAGE_MIN_DOG_HEIGHT_PX": "integer",
         "DAY_TIMEZONE": "string",
